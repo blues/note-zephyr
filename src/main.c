@@ -1,19 +1,38 @@
 /*
- * Copyright (c) 2016 Open-RnD Sp. z o.o.
- * Copyright (c) 2020 Nordic Semiconductor ASA
+ * Written by Ray Ozzie and Blues Inc. team.
  *
- * SPDX-License-Identifier: Apache-2.0
+ * Copyright (c) 2019 Blues Inc. MIT License. Use of this source code is
+ * governed by licenses granted by the copyright holder including that found in
+ * the LICENSE file.
  */
 
+#include <stdlib.h>
+#include <ctype.h>
 #include <zephyr.h>
 #include <device.h>
 #include <drivers/gpio.h>
 #include <sys/util.h>
 #include <sys/printk.h>
 #include <inttypes.h>
+#include <drivers/i2c.h>
+
+// Include Notecard note-c library
 #include "note.h"
 
 #define SLEEP_TIME_MS	1
+
+#define USE_SERIAL 0
+
+static uint32_t platform_millis(void)
+{
+	// change to whatever zephyr millis is
+	return (uint32_t) k_uptime_get();
+}
+
+static void platform_delay(uint32_t ms)
+{
+	k_msleep(ms);
+}
 
 /*
  * Get button configuration from the devicetree sw0 alias. This is mandatory.
@@ -41,7 +60,22 @@ void button_pressed(const struct device *dev, struct gpio_callback *cb,
 
 void main(void)
 {
+	const struct device *i2c_dev = DEVICE_DT_GET(DT_NODELABEL(i2c1));
 	int ret;
+
+	if (!device_is_ready(i2c_dev)) {
+		printk("I2C: Device is not ready.\n");
+		return;
+	}
+
+	// Initialize note-c references
+	NoteSetUserAgent((char *)"note-zephyr");
+    NoteSetFnDefault(malloc, free, platform_delay, platform_millis);
+
+	// noteI2c = make_note_i2c(&wirePort);
+
+    // NoteSetFnI2C(i2caddress, i2cmax, noteI2cReset,
+    //             noteI2cTransmit, noteI2cReceive);
 
 	if (!device_is_ready(button.port)) {
 		printk("Error: button device %s is not ready\n",
