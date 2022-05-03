@@ -7,7 +7,6 @@
  */
 
 #include <stdlib.h>
-#include <ctype.h>
 #include <zephyr.h>
 #include <device.h>
 #include <drivers/gpio.h>
@@ -15,24 +14,24 @@
 #include <sys/printk.h>
 #include <inttypes.h>
 #include <drivers/i2c.h>
+#include <usb/usb_device.h>
+#include <drivers/uart.h>
 
 // Include Notecard note-c library
 #include "note.h"
 
+// Notecard node-c helper methods
+#include "notecard.c"
+
+// Set your ProductUID Here
+#define PRODUCT_UID "com.blues.bsatrom:zephyr_demo"
+
 #define SLEEP_TIME_MS	1
 
-#define USE_SERIAL 0
+uint8_t button_pressed_count = 0;
 
-static uint32_t platform_millis(void)
-{
-	// change to whatever zephyr millis is
-	return (uint32_t) k_uptime_get();
-}
-
-static void platform_delay(uint32_t ms)
-{
-	k_msleep(ms);
-}
+// Uncomment to communicate with the Notecard over Serial
+// #define USE_SERIAL 1
 
 /*
  * Get button configuration from the devicetree sw0 alias. This is mandatory.
@@ -41,16 +40,17 @@ static void platform_delay(uint32_t ms)
 #if !DT_NODE_HAS_STATUS(SW0_NODE, okay)
 #error "Unsupported board: sw0 devicetree alias is not defined"
 #endif
-static const struct gpio_dt_spec button = GPIO_DT_SPEC_GET_OR(SW0_NODE, gpios,
-							      {0});
+
+static const struct gpio_dt_spec button = GPIO_DT_SPEC_GET_OR(SW0_NODE, gpios, {0});
 static struct gpio_callback button_cb_data;
+
+const struct device *i2c_dev;
 
 /*
  * The led0 devicetree alias is optional. If present, we'll use it
  * to turn on the LED whenever the button is pressed.
  */
-static struct gpio_dt_spec led = GPIO_DT_SPEC_GET_OR(DT_ALIAS(led0), gpios,
-						     {0});
+static struct gpio_dt_spec led = GPIO_DT_SPEC_GET_OR(DT_ALIAS(led0), gpios, {0});
 
 void button_pressed(const struct device *dev, struct gpio_callback *cb,
 		    uint32_t pins)
@@ -58,24 +58,64 @@ void button_pressed(const struct device *dev, struct gpio_callback *cb,
 	printk("Button pressed at %" PRIu32 "\n", k_cycle_get_32());
 }
 
+/*
+ * Ensure that an overlay for USB serial has been defined.
+ */
+BUILD_ASSERT(DT_NODE_HAS_COMPAT(DT_CHOSEN(zephyr_console), zephyr_cdc_acm_uart),
+	    "Console device is not ACM CDC UART device");
+
 void main(void)
 {
-	const struct device *i2c_dev = DEVICE_DT_GET(DT_NODELABEL(i2c1));
 	int ret;
+
+	// Configure USB Serial for Console output
+	const struct device *usb_dev = DEVICE_DT_GET(DT_CHOSEN(zephyr_console));
+	uint32_t dtr = 0;
+
+	if (usb_enable(NULL)) {
+		return;
+	}
+
+	/* Poll if the DTR flag was set to activate USB */
+	while (!dtr) {
+		uart_line_ctrl_get(usb_dev, UART_LINE_CTRL_DTR, &dtr);
+		/* Give CPU resources to low priority threads. */
+		k_sleep(K_MSEC(100));
+	}
+
+	/*
+	i2c_dev = DEVICE_DT_GET(DT_NODELABEL(i2c1));
 
 	if (!device_is_ready(i2c_dev)) {
 		printk("I2C: Device is not ready.\n");
 		return;
 	}
+	*/
 
 	// Initialize note-c references
 	NoteSetUserAgent((char *)"note-zephyr");
     NoteSetFnDefault(malloc, free, platform_delay, platform_millis);
+	NoteSetFnDebugOutput(noteLogPrint);
 
-	// noteI2c = make_note_i2c(&wirePort);
+	#ifdef USE_SERIAL
+		NoteSetFnSerial(noteSerialReset, noteSerialTransmit,
+                        noteSerialAvailable, noteSerialReceive);
+	#else
+		NoteSetFnI2C(NOTE_I2C_ADDR_DEFAULT, NOTE_I2C_MAX_DEFAULT, noteI2cReset,
+            		 noteI2cTransmit, noteI2cReceive);
 
-    // NoteSetFnI2C(i2caddress, i2cmax, noteI2cReset,
-    //             noteI2cTransmit, noteI2cReceive);
+	#endif
+
+	// Send a Notecard hub.set using note-c
+	J *req = NoteNewRequest("hub.set");
+	JAddStringToObject(req, "product", PRODUCT_UID);
+	JAddStringToObject(req, "mode", "continuous");
+
+	if (NoteRequest(req)) {
+		printk("Notecard hub.set successful.\n");
+	} else {
+		printk("Notecard hub.set failed.\n");
+	}
 
 	if (!device_is_ready(button.port)) {
 		printk("Error: button device %s is not ready\n",
@@ -124,8 +164,24 @@ void main(void)
 			/* If we have an LED, match its state to the button's. */
 			int val = gpio_pin_get_dt(&button);
 
-			if (val >= 0) {
+			if (val == 0) {
 				gpio_pin_set_dt(&led, val);
+
+				// Add a Note to the Notecard each time the button is pressed
+				button_pressed_count++;
+				printk("Button count: %d.\n", button_pressed_count);
+
+				req = NoteNewRequest("note.add");
+				JAddBoolToObject(req, "sync", true);
+				J *body = JCreateObject();
+				JAddNumberToObject(body, "button_count", button_pressed_count);
+				JAddItemToObject(req, "body", body);
+
+				if (NoteRequest(req)) {
+					printk("Notecard note.add successful.\n");
+				} else {
+					printk("Notecard note.add failed.\n");
+				}
 			}
 			k_msleep(SLEEP_TIME_MS);
 		}
