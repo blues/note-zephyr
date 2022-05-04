@@ -13,7 +13,6 @@
 #include <sys/util.h>
 #include <sys/printk.h>
 #include <inttypes.h>
-#include <drivers/i2c.h>
 #include <usb/usb_device.h>
 #include <drivers/uart.h>
 
@@ -24,7 +23,7 @@
 #include "notecard.c"
 
 // Set your ProductUID Here
-#define PRODUCT_UID "com.blues.bsatrom:zephyr_demo"
+#define PRODUCT_UID "" // Set your Notehub Product UID Here
 
 #define SLEEP_TIME_MS	1
 
@@ -43,8 +42,6 @@ uint8_t button_pressed_count = 0;
 
 static const struct gpio_dt_spec button = GPIO_DT_SPEC_GET_OR(SW0_NODE, gpios, {0});
 static struct gpio_callback button_cb_data;
-
-const struct device *i2c_dev;
 
 /*
  * The led0 devicetree alias is optional. If present, we'll use it
@@ -82,15 +79,6 @@ void main(void)
 		/* Give CPU resources to low priority threads. */
 		k_sleep(K_MSEC(100));
 	}
-
-	/*
-	i2c_dev = DEVICE_DT_GET(DT_NODELABEL(i2c1));
-
-	if (!device_is_ready(i2c_dev)) {
-		printk("I2C: Device is not ready.\n");
-		return;
-	}
-	*/
 
 	// Initialize note-c references
 	NoteSetUserAgent((char *)"note-zephyr");
@@ -174,6 +162,7 @@ void main(void)
 				req = NoteNewRequest("note.add");
 				JAddBoolToObject(req, "sync", true);
 				J *body = JCreateObject();
+				JAddStringToObject(body, "os", "zephyr");
 				JAddNumberToObject(body, "button_count", button_pressed_count);
 				JAddItemToObject(req, "body", body);
 

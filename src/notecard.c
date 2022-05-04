@@ -1,7 +1,10 @@
 #include <stdlib.h>
 #include <zephyr.h>
+#include <drivers/i2c.h>
 
-extern const struct device *i2c_dev;
+static const size_t REQUEST_HEADER_SIZE = 2;
+const struct device *i2c_dev;
+bool i2c1Initialized = false;
 
 static uint32_t platform_millis(void)
 {
@@ -13,75 +16,75 @@ static void platform_delay(uint32_t ms)
 	k_msleep(ms);
 }
 
-const char *noteI2cReceive(uint16_t device_address_, uint8_t *buffer_, uint16_t size_, uint32_t *available_)
-{
-    uint8_t read_result = i2c_read(i2c_dev, buffer_, size_, device_address_);
-
-    if (read_result) {
-        return "i2c: Unable to receive data from the Notecard.\n";
-    } else {
-        return buffer_;
-    }
-}
-
-/*
- * Reset the Notecard by writing a zero and reading the response.
- * If the Notecard provides a zero-length reply, it's ready for us to use.
- */
 bool noteI2cReset(uint16_t device_address_)
 {
+    if (i2c1Initialized)
+        return true;
+
     if (!i2c_dev) {
         i2c_dev = DEVICE_DT_GET(DT_NODELABEL(i2c1));
     }
 
-	if (!device_is_ready(i2c_dev)) {
-		printk("i2c: Device is not ready.\n");
-		return false;
-	} else {
-        printk("i2c: Device is ready.\n");
-        return true;
+    if (!device_is_ready(i2c_dev)) {
+        printk("i2c: Device is not ready.\n");
+
+        return false;
     }
 
-    uint16_t write_ret;
-    uint16_t read_ret;
+    printk("i2c: Device is ready.\n");
 
-    uint8_t chunk_len = 0;
-    uint8_t write_buf[2];
-    uint8_t read_buf[2];
+    i2c1Initialized = true;
+    return true;
+}
 
-    write_buf[0] = 0x00;
-    write_buf[1] = chunk_len;
+const char *noteI2cReceive(uint16_t device_address_, uint8_t *buffer_, uint16_t size_, uint32_t *available_)
+{
+    // Let the Notecard know that we are getting ready to read some data
+    uint8_t size_buf[2];
+    size_buf[0] = 0;
+    size_buf[1] = (uint8_t)size_;
+    uint8_t write_result = i2c_write(i2c_dev, size_buf, sizeof(size_buf), device_address_);
 
-	write_ret = i2c_write(i2c_dev, write_buf, 2, device_address_);
+    if (write_result != 0) {
+        return "i2c: Unable to initate read from the Notecard\n";
+    }
 
-	if (write_ret == 0) {
-        // Read two bytes from the Notecard
-        read_ret = i2c_read(i2c_dev, read_buf, 2, device_address_);
+    // Read from the Notecard and copy the response bytes into the response buffer
+    const int request_length = size_ + REQUEST_HEADER_SIZE;
+    uint8_t read_buf[256];
+    uint8_t read_result = i2c_read(i2c_dev, read_buf, request_length, device_address_);
 
-        // If the Notecard returns 0 bytes available, it's reset and ready.
-        // Otherwise, we need to try again.
-        if (read_buf[0] == 0) {
-            printk("i2c: Notecard at 0x%x successfully reset\n", device_address_);
-            return true;
-        } else {
-            printk("i2c: Notecard not reset. Trying again...\n");
-            noteI2cReset(device_address_);
+    if (read_result != 0) {
+        return "i2c: Unable to receive data from the Notecard.\n";
+    } else {
+        *available_ = (uint32_t)read_buf[0];
+        uint8_t bytes_to_read = read_buf[1];
+        for (size_t i = 0; i < bytes_to_read; i++)
+        {
+            buffer_[i] = read_buf[i+2];
         }
-    }
 
-    // Reset failed, return false
-    printk("i2c: Unable to communicate with the Notecard");
-    return false;
+        return NULL;
+    }
 }
 
 const char *noteI2cTransmit(uint16_t device_address_, uint8_t *buffer_, uint16_t size_)
 {
-    uint8_t write_result = i2c_write(i2c_dev, buffer_, size_, device_address_);
+    // Create a buffer that contains the number of bytes and the data to write to the Notecard
+    uint8_t write_buf[size_+1];
+    write_buf[0] = (uint8_t)size_;
+    for (size_t i = 0; i < size_; i++)
+    {
+        write_buf[i+1] = buffer_[i];
+    }
 
-    if (write_result) {
+    // Write the message
+    uint8_t write_result = i2c_write(i2c_dev, write_buf, sizeof(write_buf), device_address_);
+
+    if (write_result != 0) {
         return "i2c: Unable to transmit data to the Notecard\n";
     } else {
-        return buffer_;
+        return NULL;
     }
 }
 
