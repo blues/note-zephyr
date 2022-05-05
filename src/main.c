@@ -23,7 +23,7 @@
 #include "notecard.c"
 
 // Set your ProductUID Here
-#define PRODUCT_UID "" // Set your Notehub Product UID Here
+#define PRODUCT_UID ""
 
 #define SLEEP_TIME_MS	1
 
@@ -73,12 +73,18 @@ void main(void)
 		return;
 	}
 
-	/* Poll if the DTR flag was set to activate USB */
+	// Sleep to wait for a terminal connection. To wait until connected, comment out
+	// these two lines and uncomment the while below.
+	k_sleep(K_MSEC(2500));
+	uart_line_ctrl_get(usb_dev, UART_LINE_CTRL_DTR, &dtr);
+
+	/* To wait for a Console connection, uncomment to poll if the DTR flag was set to activate USB */
+	/*
 	while (!dtr) {
 		uart_line_ctrl_get(usb_dev, UART_LINE_CTRL_DTR, &dtr);
-		/* Give CPU resources to low priority threads. */
 		k_sleep(K_MSEC(100));
 	}
+	*/
 
 	// Initialize note-c references
 	NoteSetUserAgent((char *)"note-zephyr");
@@ -98,11 +104,22 @@ void main(void)
 	J *req = NoteNewRequest("hub.set");
 	JAddStringToObject(req, "product", PRODUCT_UID);
 	JAddStringToObject(req, "mode", "continuous");
+	JAddStringToObject(req, "sn", "zephyr-notecard");
 
 	if (NoteRequest(req)) {
 		printk("Notecard hub.set successful.\n");
 	} else {
 		printk("Notecard hub.set failed.\n");
+	}
+
+	req = NoteNewRequest("card.dfu");
+  	JAddStringToObject(req, "name", "stm32");
+  	JAddBoolToObject(req, "on", true);
+
+	if (NoteRequest(req)) {
+		printk("Notecard card.dfu successful.\n");
+	} else {
+		printk("Notecard card.dfu failed.\n");
 	}
 
 	if (!device_is_ready(button.port)) {
