@@ -2,7 +2,6 @@
 *.d
 
 .DS_Store
-.vscode
 
 # Object files
 *.o

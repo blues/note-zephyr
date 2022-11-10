@@ -6,21 +6,22 @@
  * the LICENSE file.
  */
 
-#include <stdlib.h>
-#include <zephyr.h>
-#include <device.h>
-#include <drivers/gpio.h>
-#include <sys/util.h>
-#include <sys/printk.h>
 #include <inttypes.h>
-#include <usb/usb_device.h>
-#include <drivers/uart.h>
+#include <stdlib.h>
+
+#include <zephyr/device.h>
+#include <zephyr/drivers/gpio.h>
+#include <zephyr/drivers/uart.h>
+#include <zephyr/kernel.h>
+#include <zephyr/sys/util.h>
+#include <zephyr/sys/printk.h>
+#include <zephyr/usb/usb_device.h>
 
 // Include Notecard note-c library
 #include "note.h"
 
 // Notecard node-c helper methods
-#include "notecard.c"
+#include "notecard.h"
 
 // Set your ProductUID Here
 #define PRODUCT_UID ""

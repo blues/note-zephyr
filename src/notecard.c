@@ -1,17 +1,18 @@
-#include <stdlib.h>
-#include <zephyr.h>
-#include <drivers/i2c.h>
+#include "notecard.h"
+
+#include <zephyr/drivers/i2c.h>
+#include <zephyr/kernel.h>
 
 static const size_t REQUEST_HEADER_SIZE = 2;
 const struct device *i2c_dev;
 bool i2c1Initialized = false;
 
-static uint32_t platform_millis(void)
+uint32_t platform_millis(void)
 {
 	return (uint32_t) k_uptime_get();
 }
 
-static void platform_delay(uint32_t ms)
+void platform_delay(uint32_t ms)
 {
 	k_msleep(ms);
 }
