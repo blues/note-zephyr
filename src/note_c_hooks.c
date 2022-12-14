@@ -1,20 +1,18 @@
 #include "note_c_hooks.h"
 
 #include <zephyr/drivers/i2c.h>
+#include <zephyr/drivers/uart.h>
 #include <zephyr/kernel.h>
 
 static const size_t REQUEST_HEADER_SIZE = 2;
+static const uint16_t SERIAL_PEEK_EMPTY_MASK = 0xFF00;
 
 const struct device *i2c_dev = NULL;
 bool i2c_initialized = false;
 
-uint32_t platform_millis(void) {
-    return (uint32_t)k_uptime_get();
-}
-
-void platform_delay(uint32_t ms) {
-    k_msleep(ms);
-}
+const struct device *serial_dev = NULL;
+bool serial1_initialized = false;
+uint16_t serial_peek_buffer = SERIAL_PEEK_EMPTY_MASK;
 
 const char *note_i2c_receive(uint16_t device_address_, uint8_t *buffer_, uint16_t size_, uint32_t *available_) {
     // Let the Notecard know that we are getting ready to read some data
@@ -92,4 +90,122 @@ size_t note_log_print(const char *message_) {
     }
 
     return 0;
+}
+
+bool note_serial_available(void)
+{
+    bool result;
+
+    if (SERIAL_PEEK_EMPTY_MASK & serial_peek_buffer)
+    {
+        unsigned char next_char;
+        int status = uart_poll_in(serial_dev, &next_char);
+        switch (status)
+        {
+        case 0:
+            serial_peek_buffer = next_char;
+            result = true;
+            break;
+        case -1:
+            // No character was available to read
+            // fallthrough
+        case -ENOSYS:
+            // The operation was not implemented
+            // fallthrough
+        case -EBUSY:
+            // Async reception was enabled using `uart_rx_enable`
+            // fallthrough
+        default:
+            result = false;
+            break;
+        }
+    }
+    else
+    {
+        result = true;
+    }
+
+    return result;
+}
+
+char note_serial_receive(void)
+{
+    char result;
+
+    if (!(SERIAL_PEEK_EMPTY_MASK & serial_peek_buffer))
+    {
+        // Peek buffer is NOT empty
+        result = serial_peek_buffer;
+        serial_peek_buffer = SERIAL_PEEK_EMPTY_MASK;
+    }
+    else if (uart_poll_in(serial_dev, (unsigned char *)&result))
+    {
+        result = '\0';
+    }
+
+    return result;
+}
+
+bool note_serial_reset(void)
+{
+    bool result;
+
+    if (serial1_initialized)
+    {
+        // Empty buffer
+        for (char c; !uart_poll_in(serial_dev, &c);)
+            ;
+        result = true;
+    }
+    else
+    {
+        if (!serial_dev)
+        {
+            serial_dev = DEVICE_DT_GET(DT_NODELABEL(usart1));
+        }
+        struct uart_config serial_cfg = {
+            .baudrate = 9600,
+            .parity = UART_CFG_PARITY_NONE,
+            .stop_bits = UART_CFG_STOP_BITS_1,
+            .data_bits = UART_CFG_DATA_BITS_8,
+            .flow_ctrl = UART_CFG_FLOW_CTRL_NONE};
+        if (uart_configure(serial_dev, &serial_cfg))
+        {
+            printk("serial: Failed to configure device.\n");
+            serial1_initialized = false;
+            result = false;
+        }
+        else if (!device_is_ready(serial_dev))
+        {
+            printk("serial: Device is not ready.\n");
+            serial1_initialized = false;
+            result = false;
+        }
+        else
+        {
+            printk("serial: Device is ready.\n");
+            serial1_initialized = true;
+            result = true;
+        }
+    }
+
+    return result;
+}
+
+void note_serial_transmit(uint8_t *text_, size_t len_, bool flush_)
+{
+    (void)flush_; // `uart_poll_out` blocks (i.e. always flushes)
+
+    for (size_t i = 0; i < len_; ++i)
+    {
+        uart_poll_out(serial_dev, text_[i]);
+    }
+}
+
+void platform_delay(uint32_t ms) {
+    k_msleep(ms);
+}
+
+uint32_t platform_millis(void) {
+    return (uint32_t)k_uptime_get();
 }

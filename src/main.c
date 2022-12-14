@@ -26,6 +26,9 @@
 #pragma message "PRODUCT_UID is not defined in this example. Please ensure your Notecard has a product identifier set before running this example or define it in code here. More details at https://bit.ly/product-uid"
 #endif
 
+// Uncomment to communicate with the Notecard over Serial
+#define USE_SERIAL
+
 // 10000 msec = 10 sec
 #define SLEEP_TIME_MS 10000
 
@@ -44,8 +47,13 @@ void main(void)
     NoteSetUserAgent((char *)"note-zephyr");
     NoteSetFnDefault(malloc, free, platform_delay, platform_millis);
     NoteSetFnDebugOutput(note_log_print);
+#ifdef USE_SERIAL
+    NoteSetFnSerial(note_serial_reset, note_serial_transmit,
+                    note_serial_available, note_serial_receive);
+#else
     NoteSetFnI2C(NOTE_I2C_ADDR_DEFAULT, NOTE_I2C_MAX_DEFAULT, note_i2c_reset,
                  note_i2c_transmit, note_i2c_receive);
+#endif
 
     // Send a Notecard hub.set using note-c
     J *req = NoteNewRequest("hub.set");
