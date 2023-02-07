@@ -5,8 +5,7 @@
             "includePath": [
                 "${workspaceFolder}/**",
                 "${config:zephyr_base}/build/zephyr/include/**",
-                "${config:zephyr_base}/include/**",
-                "/home/blues/zephyrproject/zephyr/include"
+                "${config:zephyr_base}/include/**"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/gcc",

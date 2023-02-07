@@ -16,5 +16,5 @@
     // instructions provided by the Zephyr Project regarding tool
     // installation, see:
     // https://docs.zephyrproject.org/latest/develop/getting_started/index.html#install-zephyr-sdk
-    "zephyr_sdk_path":"/usr/local/zephyr-sdk-0.15.1"
+    "zephyr_sdk_path":"/usr/local/zephyr-sdk-0.15.2"
 }

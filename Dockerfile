@@ -22,6 +22,9 @@ ARG UID
 ARG USER
 
 # Local Argument(s)
+ARG ZEPHYR_TOOLCHAIN_VERSION=0.15.2
+
+# Environment Variables
 
 # Create Non-Root User
 RUN ["dash", "-c", "\
@@ -93,16 +96,17 @@ WORKDIR /usr/local/
 
 # Install Zephyr SDK and Tools
 RUN ["dash", "-c", "\
-    wget https://github.com/zephyrproject-rtos/sdk-ng/releases/download/v0.15.1/zephyr-sdk-0.15.1_linux-x86_64.tar.gz \
- && wget -O - https://github.com/zephyrproject-rtos/sdk-ng/releases/download/v0.15.1/sha256.sum | shasum --check --ignore-missing \
- && tar xvf zephyr-sdk-0.15.1_linux-x86_64.tar.gz \
- && cd zephyr-sdk-0.15.1 \
+    wget https://github.com/zephyrproject-rtos/sdk-ng/releases/download/v${ZEPHYR_TOOLCHAIN_VERSION}/zephyr-sdk-${ZEPHYR_TOOLCHAIN_VERSION}_linux-x86_64.tar.gz \
+ && wget -O - https://github.com/zephyrproject-rtos/sdk-ng/releases/download/v${ZEPHYR_TOOLCHAIN_VERSION}/sha256.sum | shasum --check --ignore-missing \
+ && tar xvf zephyr-sdk-${ZEPHYR_TOOLCHAIN_VERSION}_linux-x86_64.tar.gz \
+ && rm zephyr-sdk-${ZEPHYR_TOOLCHAIN_VERSION}_linux-x86_64.tar.gz \
+ && cd zephyr-sdk-${ZEPHYR_TOOLCHAIN_VERSION} \
  && printf \"y\\nY\\n\" | ./setup.sh \
 "]
 
-# Update User and Path (gdb and openocd)
-ENV PATH="/usr/local/zephyr-sdk-0.15.1/arm-zephyr-eabi/bin:${PATH}"
-ENV PATH="/usr/local/zephyr-sdk-0.15.1/sysroots/x86_64-pokysdk-linux/usr/bin:${PATH}"
+# Update Path (gdb and openocd) and Environment Variables
+ENV PATH="/usr/local/zephyr-sdk-${ZEPHYR_TOOLCHAIN_VERSION}/arm-zephyr-eabi/bin:${PATH}"
+ENV PATH="/usr/local/zephyr-sdk-${ZEPHYR_TOOLCHAIN_VERSION}/sysroots/x86_64-pokysdk-linux/usr/bin:${PATH}"
 ENV ZEPHYR_BASE="/home/${USER}/zephyrproject/zephyr"
 WORKDIR /host-volume
 

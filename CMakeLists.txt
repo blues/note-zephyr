@@ -31,7 +31,7 @@ zephyr_compile_options(
     -ggdb
     -Og
     -Wall
-    # -Wextra
+    -Wextra
     -Wno-unused-parameter
     # -Wpedantic
 )
