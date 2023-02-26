@@ -18,11 +18,35 @@
             ]
         },
         {
+            "label": "Zephyr: Rebuild Application",
+            "type": "shell",
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": {
+                "kind": "build"
+            },
+            "command": [
+                "west build --board ${config:board} ${workspaceRoot}"
+            ]
+        },
+        {
             "label": "Zephyr: Flash Firmware",
             "type": "shell",
             "problemMatcher": [],
             "command": [
                 "west flash"
+            ]
+        },
+        {
+            "label": "Zephyr: Rebuild and Flash Firmware",
+            "type": "shell",
+            "problemMatcher": [],
+            "command": [
+                "west flash"
+            ],
+            "dependsOn": [
+                "Zephyr: Rebuild Application"
             ]
         },
         {
