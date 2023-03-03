@@ -1,4 +1,4 @@
-#include "notecard.h"
+#include "note_c_hooks.h"
 
 #include <zephyr/drivers/i2c.h>
 #include <zephyr/drivers/uart.h>
@@ -7,7 +7,7 @@
 static const size_t REQUEST_HEADER_SIZE = 2;
 
 const struct device *i2c_dev = NULL;
-bool i2c1_initialized = false;
+bool i2c_initialized = false;
 
 uint32_t platform_millis(void)
 {
@@ -58,7 +58,7 @@ bool noteI2cReset(uint16_t device_address_)
 {
     (void)device_address_;
 
-    if (i2c1_initialized)
+    if (i2c_initialized)
         return true;
 
     if (!i2c_dev)
@@ -75,7 +75,7 @@ bool noteI2cReset(uint16_t device_address_)
 
     printk("i2c: Device is ready.\n");
 
-    i2c1_initialized = true;
+    i2c_initialized = true;
     return true;
 }
 

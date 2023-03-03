@@ -21,7 +21,7 @@
 #include "note.h"
 
 // Notecard node-c helper methods
-#include "notecard.h"
+#include "note_c_hooks.h"
 
 // Set your ProductUID Here
 #define PRODUCT_UID ""
