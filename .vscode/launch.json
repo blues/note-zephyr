@@ -6,7 +6,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Swan Debug",
+            "name": "Swan Debug (Container)",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/zephyr/zephyr.elf",
@@ -38,6 +38,41 @@
                     "text": "monitor [target current] configure -event gdb-detach { shutdown }",
                     "ignoreFailures": false
                 },
+            ],
+            "stopAtConnect": false,
+            "logging": {
+                "exceptions": true,
+                "engineLogging": false,
+                "moduleLoad": true,
+                "programOutput": true,
+                "trace": true,
+                "traceResponse": false
+            }
+        },
+        {
+            "name": "Swan Debug (External)",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/zephyr/zephyr.elf",
+            "args": [],
+            "cwd": "${config:zephyr_base}",
+            "MIMode": "gdb",
+            "miDebuggerPath": "arm-zephyr-eabi-gdb",
+            "miDebuggerServerAddress": "host.docker.internal:3333",
+            "useExtendedRemote": true,
+            "filterStderr": true,
+            "filterStdout": false,
+            "postRemoteConnectCommands": [
+                {
+                    "description": "Hard Reset and Immediately Halt",
+                    "text": "monitor reset halt",
+                    "ignoreFailures": false
+                },
+                {
+                    "description": "Flush Internal Register Cache",
+                    "text": "flushregs",
+                    "ignoreFailures": false
+                }
             ],
             "stopAtConnect": false,
             "logging": {

@@ -31,7 +31,7 @@ zephyr_compile_options(
     -ggdb
     -Og
     -Wall
-    -Wextra
+    # -Wextra
     -Wno-unused-parameter
     # -Wpedantic
 )
@@ -39,7 +39,13 @@ zephyr_get_compile_options_for_lang_as_string(C zephyr_options)
 message(STATUS ${zephyr_options})
 message(STATUS) # Insert blank line for readability
 
-# Let Zephyr build additional 3rd party libs (e.g. `note-c`) with `app`
+# Zephyr Example Application
+target_sources(app
+    PRIVATE ${SRC}/main.c
+    PRIVATE ${SRC}/note_c_hooks.c
+)
+
+# Build additional 3rd party libs (e.g. `note-c`) with `app`
 target_sources(app
     PRIVATE ${NOTE_C}/n_atof.c
     PRIVATE ${NOTE_C}/n_b64.c
@@ -56,8 +62,6 @@ target_sources(app
     PRIVATE ${NOTE_C}/n_serial.c
     PRIVATE ${NOTE_C}/n_str.c
     PRIVATE ${NOTE_C}/n_ua.c
-    PRIVATE ${SRC}/main.c
-    PRIVATE ${SRC}/note_c_hooks.c
 )
 
 target_include_directories(app

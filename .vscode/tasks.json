@@ -14,7 +14,7 @@
                 "isDefault": true
             },
             "command": [
-                "west build --board ${config:board} --pristine=always ${workspaceRoot}"
+                "west build --board ${config:board} --pristine=always ${workspaceFolder}"
             ]
         },
         {
@@ -27,11 +27,11 @@
                 "kind": "build"
             },
             "command": [
-                "west build --board ${config:board} ${workspaceRoot}"
+                "west build --board ${config:board} ${workspaceFolder}"
             ]
         },
         {
-            "label": "Zephyr: Flash Firmware",
+            "label": "Zephyr: Flash Firmware (Container)",
             "type": "shell",
             "problemMatcher": [],
             "command": [
@@ -39,15 +39,32 @@
             ]
         },
         {
-            "label": "Zephyr: Rebuild and Flash Firmware",
+            "label": "Zephyr: Flash Firmware (External)",
             "type": "shell",
             "problemMatcher": [],
             "command": [
-                "west flash"
-            ],
+                "{ echo \"reset halt; program {${hostWorkspaceFolder}/build/zephyr/zephyr.elf} verify reset; sleep 0; exit;\" >&3; cat <&3-; } 3<> /dev/tcp/host.docker.internal/4444"
+            ]
+        },
+        {
+            "label": "Zephyr: Rebuild and Flash Firmware (Container)",
+            "type": "shell",
+            "problemMatcher": [],
             "dependsOn": [
-                "Zephyr: Rebuild Application"
-            ]
+                "Zephyr: Rebuild Application",
+                "Zephyr: Flash Firmware (Container)"
+            ],
+            "dependsOrder": "sequence"
+        },
+        {
+            "label": "Zephyr: Rebuild and Flash Firmware (External)",
+            "type": "shell",
+            "problemMatcher": [],
+            "dependsOn": [
+                "Zephyr: Rebuild Application",
+                "Zephyr: Flash Firmware (External)"
+            ],
+            "dependsOrder": "sequence"
         },
         {
             "label": "Zephyr: List Boards",
