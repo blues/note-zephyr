@@ -35,6 +35,13 @@
 // The devicetree node identifier for the "led0" alias.
 #define LED0_NODE DT_ALIAS(led0)
 
+#define MY_CLK_HSI48 DT_NODELABEL(clk_hsi48)
+#if DT_NODE_HAS_STATUS(MY_CLK_HSI48, okay)
+const struct device *const hsi48 = DEVICE_DT_GET(MY_CLK_HSI48);
+#else
+#error "HSI clock is disabled"
+#endif
+
 // A build error on this line means your board is unsupported.
 // See the sample documentation for information on how to fix this.
 static const struct gpio_dt_spec led = GPIO_DT_SPEC_GET(LED0_NODE, gpios);
