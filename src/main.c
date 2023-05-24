@@ -32,13 +32,23 @@
 // The devicetree node identifier for the "led0" alias.
 #define LED0_NODE DT_ALIAS(led0)
 
-// A build error on this line means your board is unsupported.
-// See the sample documentation for information on how to fix this.
+#if DT_NODE_HAS_STATUS(LED0_NODE, okay)
+
 static const struct gpio_dt_spec led = GPIO_DT_SPEC_GET(LED0_NODE, gpios);
 
-void main(void)
+#else
+
+// A build error on this line means your board is unsupported.
+// See the sample documentation for information on how to fix this.
+#error "Unsupported board: led0 devicetree alias is not defined"
+
+#endif
+
+int main(void)
 {
     int ret;
+
+    printk("[INFO] main(): Initializing...\n");
 
     // Initialize note-c hooks
     NoteSetUserAgent((char *)"note-zephyr");
@@ -57,29 +67,30 @@ void main(void)
         if (!NoteRequest(req))
         {
             printk("Failed to configure Notecard.\n");
-            return;
+            return -1;
         }
     }
     else
     {
         printk("Failed to allocate memory.\n");
-        return;
+        return -1;
     }
 
     if (!gpio_is_ready_dt(&led))
     {
         printk("Failed to activate LED.\n");
-        return;
+        return -1;
     }
 
     ret = gpio_pin_configure_dt(&led, GPIO_OUTPUT_ACTIVE);
     if (ret < 0)
     {
         printk("Failed to configure LED.\n");
-        return;
+        return ret;
     }
 
     // Application Loop
+    printk("[INFO] main(): Entering loop...\n");
     while (1)
     {
         // Toggle LED state
@@ -87,7 +98,7 @@ void main(void)
         if (ret < 0)
         {
             printk("Failed to toggle LED.\n");
-            return;
+            break;
         }
 
         // Report LED state to Notehub.io
@@ -100,16 +111,20 @@ void main(void)
             if (!NoteRequest(req))
             {
                 printk("Failed to submit Note to Notecard.\n");
-                return;
+                ret = -1;
+                break;
             }
         }
         else
         {
             printk("Failed to allocate memory.\n");
-            return;
+            ret = -1;
+            break;
         }
 
         // Wait to iterate
         k_msleep(SLEEP_TIME_MS);
     }
+
+    return ret;
 }
