@@ -24,7 +24,7 @@ ARG UID
 ARG USER
 
 # Local Argument(s)
-ARG ZEPHYR_TOOLCHAIN_VERSION=0.15.2
+ARG ZEPHYR_TOOLCHAIN_VERSION=0.16.3
 
 # Environment Variables
 
@@ -117,10 +117,10 @@ WORKDIR /usr/local/
 
 # Install Zephyr SDK and Tools
 RUN ["dash", "-c", "\
-    wget https://github.com/zephyrproject-rtos/sdk-ng/releases/download/v${ZEPHYR_TOOLCHAIN_VERSION}/zephyr-sdk-${ZEPHYR_TOOLCHAIN_VERSION}_linux-${HOST_ARCH}.tar.gz \
+    wget https://github.com/zephyrproject-rtos/sdk-ng/releases/download/v${ZEPHYR_TOOLCHAIN_VERSION}/zephyr-sdk-${ZEPHYR_TOOLCHAIN_VERSION}_linux-${HOST_ARCH}.tar.xz \
  && wget -O - https://github.com/zephyrproject-rtos/sdk-ng/releases/download/v${ZEPHYR_TOOLCHAIN_VERSION}/sha256.sum | shasum --check --ignore-missing \
- && tar xvf zephyr-sdk-${ZEPHYR_TOOLCHAIN_VERSION}_linux-${HOST_ARCH}.tar.gz \
- && rm zephyr-sdk-${ZEPHYR_TOOLCHAIN_VERSION}_linux-${HOST_ARCH}.tar.gz \
+ && tar xvf zephyr-sdk-${ZEPHYR_TOOLCHAIN_VERSION}_linux-${HOST_ARCH}.tar.xz \
+ && rm zephyr-sdk-${ZEPHYR_TOOLCHAIN_VERSION}_linux-${HOST_ARCH}.tar.xz \
  && cd zephyr-sdk-${ZEPHYR_TOOLCHAIN_VERSION} \
  && printf \"y\\nY\\n\" | ./setup.sh \
 "]
