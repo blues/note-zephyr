@@ -258,3 +258,44 @@ as `/dev/ttyACM0`.
       - Press green triangle at the top of the **Run and Debug** panel.
       - Select **Run > Start Debugging** from the application menu.
       - Press the function key, `F5`.
+
+Using the West Module
+---------------------
+
+To get started with this module, you will need to add it to your Zephyr project's `west.yml` manifest file and then add the required overlay to your Zephyr project's device tree.
+
+### Manifest
+
+To use this module, add the following to your Zephyr project's `west.yml` manifest file, for example:
+
+```yaml
+  projects:
+    # Your other modules here
+    - name: notecard
+      path: modules/notecard
+      revision: main
+      submodules: true
+      url: https://github.com/blues/note-zephyr
+```
+
+Then, run `west update` to pull the module into your project.
+
+### Overlays
+
+The helper functions (`note_c_hooks.c`) provide controls to communicate with a Notecard attached to the Zephyr host via i2c.
+
+As such, the helper functions expect the target device to use a DT alias of `notecard` for the i2c bus.
+You should ensure the host device you are targetting has this alias defined in its DT overlay.
+
+```dts
+/ {
+    aliases {
+        // for example, using the i2c0 bus
+        notecard = &i2c0;
+    };
+};
+```
+
+### Example
+
+Included in this repo is a simple example for using the west module to send a note using the Notecard. See the [example](example/README.md) for more details.

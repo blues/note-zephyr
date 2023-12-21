@@ -1,80 +1,24 @@
-# Copyright 2022 Blues Inc.  All rights reserved.
-# Use of this source code is governed by licenses granted by the
-# copyright holder including that found in the LICENSE file.
-
-# SPDX-License-Identifier: MIT
-
-# Set CMake policy behavior
-cmake_minimum_required(VERSION 3.20.0)
-
-# Load Zephyr Package
-find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
-
-# Basic Project Configuration
-project(note-zephyr
-    VERSION 1.0.0
-    LANGUAGES C ASM
-)
-set(CMAKE_C_STANDARD 11)
-set(CMAKE_C_STANDARD_REQUIRED ON)
-set(CMAKE_C_EXTENSIONS ON)  # required for inline asm
-
-# Create variables to alias path names
-set(NOTE_C ${CMAKE_CURRENT_LIST_DIR}/note-c)
-set(SRC ${CMAKE_CURRENT_LIST_DIR}/src)
-
-# Set global compile settings
-zephyr_get_compile_options_for_lang_as_string(C zephyr_options)
-message(STATUS ${zephyr_options})
-message(STATUS) # Insert blank line for readability
-zephyr_compile_options(
-    -ggdb
-    -Og
-    -Wall
-    # -Wextra
-    -Wno-unused-parameter
-    # -Wpedantic
-)
-zephyr_get_compile_options_for_lang_as_string(C zephyr_options)
-message(STATUS ${zephyr_options})
-message(STATUS) # Insert blank line for readability
-
-# Zephyr Example Application
-target_sources(app
-    PRIVATE ${SRC}/main.c
-    PRIVATE ${SRC}/note_c_hooks.c
-)
-
-# Build additional 3rd party libs (e.g. `note-c`) with `app`
-target_sources(app
-    PRIVATE ${NOTE_C}/n_atof.c
-    PRIVATE ${NOTE_C}/n_b64.c
-    PRIVATE ${NOTE_C}/n_cjson.c
-    PRIVATE ${NOTE_C}/n_cjson_helpers.c
-    PRIVATE ${NOTE_C}/n_const.c
-    PRIVATE ${NOTE_C}/n_ftoa.c
-    PRIVATE ${NOTE_C}/n_helpers.c
-    PRIVATE ${NOTE_C}/n_hooks.c
-    PRIVATE ${NOTE_C}/n_i2c.c
-    PRIVATE ${NOTE_C}/n_md5.c
-    PRIVATE ${NOTE_C}/n_printf.c
-    PRIVATE ${NOTE_C}/n_request.c
-    PRIVATE ${NOTE_C}/n_serial.c
-    PRIVATE ${NOTE_C}/n_str.c
-    PRIVATE ${NOTE_C}/n_ua.c
-)
-
-target_include_directories(app
-    PRIVATE ${NOTE_C}
-)
-
-# WARNING: These options are overriden by `zephyr_compile_options()`
-target_compile_options(app
-    PRIVATE -ggdb
-    PRIVATE -Og
-    PRIVATE -Wall
-    PRIVATE -Wextra
-    # PRIVATE -Wpedantic
-    PRIVATE -Wimplicit-fallthrough=2
-    PRIVATE -Wunused-parameter
-)
+if(CONFIG_NOTECARD)
+  set(NOTE_C_DIR ${ZEPHYR_CURRENT_MODULE_DIR}/note-c)
+  zephyr_include_directories(. ${NOTE_C_DIR})
+  zephyr_library_sources(
+    note_c_hooks.c
+    ${NOTE_C_DIR}/n_atof.c
+    ${NOTE_C_DIR}/n_atof.c
+    ${NOTE_C_DIR}/n_b64.c
+    ${NOTE_C_DIR}/n_cjson.c
+    ${NOTE_C_DIR}/n_cjson_helpers.c
+    ${NOTE_C_DIR}/n_cobs.c
+    ${NOTE_C_DIR}/n_const.c
+    ${NOTE_C_DIR}/n_ftoa.c
+    ${NOTE_C_DIR}/n_helpers.c
+    ${NOTE_C_DIR}/n_hooks.c
+    ${NOTE_C_DIR}/n_i2c.c
+    ${NOTE_C_DIR}/n_md5.c
+    ${NOTE_C_DIR}/n_printf.c
+    ${NOTE_C_DIR}/n_request.c
+    ${NOTE_C_DIR}/n_serial.c
+    ${NOTE_C_DIR}/n_str.c
+    ${NOTE_C_DIR}/n_ua.c
+  )
+endif()
