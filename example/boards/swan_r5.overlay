@@ -1,0 +1,6 @@
+/ {
+    aliases {
+        // for example, using the i2c1 bus on the Blues Swan Feather Board
+        notecard = &i2c1;
+    };
+};

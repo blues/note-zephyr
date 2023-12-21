@@ -1,0 +1,6 @@
+config NOTECARD
+    bool "Enable the helper library for the Blues Wireless Notecard"
+    default n
+    depends on I2C
+    help
+      Module for controlling blues.io notecard using the note-c library. Requires an device tree alias for the notecard.
