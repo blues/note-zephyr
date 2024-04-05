@@ -17,7 +17,7 @@
             "miDebuggerServerAddress": ":3333",
             "useExtendedRemote": true,
             "debugServerPath": "openocd",
-            "debugServerArgs": "-s ${config:zephyr_sdk_path}/sysroots/x86_64-pokysdk-linux/usr/share/openocd/scripts -s ${config:zephyr_base}/boards/arm/${config:board}/support -f openocd.cfg",
+            "debugServerArgs": "-s ${config:zephyr_sdk_path}/sysroots/x86_64-pokysdk-linux/usr/share/openocd/scripts -s ${config:zephyr_base}/boards/${config:vendor}/${config:board}/support -f openocd.cfg",
             "serverStarted": "Listening on port [0-9]+ for gdb connections",
             "filterStderr": true,
             "filterStdout": false,

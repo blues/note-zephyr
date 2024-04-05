@@ -3,6 +3,12 @@
     // For a list of supported boards, run the "Zephyr: List Boards" task.
     "board":"swan_r5",
 
+    // Update the `vendor` value to the vendor of the board you wish to target.
+    // This value is used to locate the board support files during debugging.
+    // If you are unsure of the vendor, you can find it in the `boards` folder
+    // of the Zephyr base directory.
+    "vendor":"blues",
+
     // If necessary, update the value of `zephyr_base` to match your
     // environment. The value provided has been selected based on the
     // instructions provided by the Zephyr Project regarding tool
