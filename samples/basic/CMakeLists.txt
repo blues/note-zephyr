@@ -45,29 +45,6 @@ target_sources(app
     PRIVATE ${SRC}/note_c_hooks.c
 )
 
-# Build additional 3rd party libs (e.g. `note-c`) with `app`
-target_sources(app
-    PRIVATE ${NOTE_C}/n_atof.c
-    PRIVATE ${NOTE_C}/n_b64.c
-    PRIVATE ${NOTE_C}/n_cjson.c
-    PRIVATE ${NOTE_C}/n_cjson_helpers.c
-    PRIVATE ${NOTE_C}/n_const.c
-    PRIVATE ${NOTE_C}/n_ftoa.c
-    PRIVATE ${NOTE_C}/n_helpers.c
-    PRIVATE ${NOTE_C}/n_hooks.c
-    PRIVATE ${NOTE_C}/n_i2c.c
-    PRIVATE ${NOTE_C}/n_md5.c
-    PRIVATE ${NOTE_C}/n_printf.c
-    PRIVATE ${NOTE_C}/n_request.c
-    PRIVATE ${NOTE_C}/n_serial.c
-    PRIVATE ${NOTE_C}/n_str.c
-    PRIVATE ${NOTE_C}/n_ua.c
-)
-
-target_include_directories(app
-    PRIVATE ${NOTE_C}
-)
-
 # WARNING: These options are overriden by `zephyr_compile_options()`
 target_compile_options(app
     PRIVATE -ggdb
