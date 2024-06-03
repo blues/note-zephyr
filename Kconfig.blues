@@ -1,0 +1,4 @@
+menuconfig BLUES_NOTECARD
+	bool "Enable Blues Notecard libraries"
+	help
+	  Enable Blues Notecard Libraries to communicate with the Notecard
