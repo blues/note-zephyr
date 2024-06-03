@@ -20,7 +20,7 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS ON)  # required for inline asm
 
 # Create variables to alias path names
-set(NOTE_C ${CMAKE_CURRENT_LIST_DIR}/note-c)
+set(NOTE_C ${CMAKE_CURRENT_LIST_DIR}/../../note-c)
 set(SRC ${CMAKE_CURRENT_LIST_DIR}/src)
 
 # Set global compile settings
