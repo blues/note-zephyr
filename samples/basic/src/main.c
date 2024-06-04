@@ -52,8 +52,6 @@ int main(void)
 
     // Initialize note-c hooks
     NoteSetUserAgent((char *)"note-zephyr");
-    NoteSetFnDefault(malloc, free, platform_delay, platform_millis);
-    NoteSetFnDebugOutput(note_log_print);
     NoteSetFnI2C(NOTE_I2C_ADDR_DEFAULT, NOTE_I2C_MAX_DEFAULT, note_i2c_reset,
                  note_i2c_transmit, note_i2c_receive);
 

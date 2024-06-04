@@ -18,5 +18,8 @@ zephyr_library_sources(
 )
 
 zephyr_include_directories(
+	.
 	../note-c/
 )
+
+add_subdirectory(hooks)

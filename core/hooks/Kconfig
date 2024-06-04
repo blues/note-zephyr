@@ -1,0 +1,11 @@
+config BLUES_NOTECARD_HOOKS_HEAP_TIMEOUT
+	int "Allocation Timeout in ms"
+	default 10
+	help
+	  Set Allocation Timeout in milliseconds
+
+config BLUES_NOTECARD_HOOKS_HEAP_SIZE
+	int "Allocation Heap total size"
+	default 16384
+	help
+	  Set Total Heap size reserved for Blues Notecard

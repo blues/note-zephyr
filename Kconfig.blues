@@ -2,3 +2,9 @@ menuconfig BLUES_NOTECARD
 	bool "Enable Blues Notecard libraries"
 	help
 	  Enable Blues Notecard Libraries to communicate with the Notecard
+
+if BLUES_NOTECARD
+
+rsource "core/Kconfig"
+
+endif # BLUES_NOTECARD
