@@ -2,3 +2,4 @@
 # SPDX-License-Identifier: MIT
 
 rsource "hooks/Kconfig"
+rsource "transport/Kconfig"
