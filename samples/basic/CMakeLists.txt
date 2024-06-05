@@ -42,7 +42,6 @@ message(STATUS) # Insert blank line for readability
 # Zephyr Example Application
 target_sources(app
     PRIVATE ${SRC}/main.c
-    PRIVATE ${SRC}/note_c_hooks.c
 )
 
 # WARNING: These options are overriden by `zephyr_compile_options()`

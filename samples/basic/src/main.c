@@ -14,9 +14,6 @@
 // Include Notecard note-c library
 #include <note.h>
 
-// Notecard node-c helper methods
-#include "note_c_hooks.h"
-
 // Uncomment the define below and replace com.your-company:your-product-name
 // with your ProductUID.
 // #define PRODUCT_UID "com.your-company:your-product-name"
@@ -52,8 +49,6 @@ int main(void)
 
     // Initialize note-c hooks
     NoteSetUserAgent((char *)"note-zephyr");
-    NoteSetFnI2C(NOTE_I2C_ADDR_DEFAULT, NOTE_I2C_MAX_DEFAULT, note_i2c_reset,
-                 note_i2c_transmit, note_i2c_receive);
 
     // Send a Notecard hub.set using note-c
     J *req = NoteNewRequest("hub.set");
