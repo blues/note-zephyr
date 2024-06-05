@@ -1,3 +1,5 @@
 build:
   cmake: .
   kconfig: Kconfig.blues
+  settings:
+    dts_root: .

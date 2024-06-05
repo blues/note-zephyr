@@ -1,0 +1,8 @@
+# Copyright (c) 2024 Croxel Inc.
+# SPDX-License-Identifier: MIT
+
+description: Blues Notecard Modem
+
+compatible: "blues,notecard"
+
+include: i2c-device.yaml
