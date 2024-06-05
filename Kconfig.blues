@@ -1,3 +1,6 @@
+# Copyright (c) 2024 Croxel Inc.
+# SPDX-License-Identifier: MIT
+
 menuconfig BLUES_NOTECARD
 	bool "Enable Blues Notecard libraries"
 	help

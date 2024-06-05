@@ -1,3 +1,6 @@
+# Copyright (c) 2024 Croxel Inc.
+# SPDX-License-Identifier: MIT
+
 config BLUES_NOTECARD_HOOKS_HEAP_TIMEOUT
 	int "Allocation Timeout in ms"
 	default 10
