@@ -16,3 +16,5 @@ config BLUES_NOTECARD_TRANSPORT_UART
 	depends on $(dt_compat_on_bus,$(DT_COMPAT_BLUES_NOTECARD),uart)
 	depends on !BLUES_NOTECARD_TRANSPORT_I2C
 	select SERIAL
+	select UART_INTERRUPT_DRIVEN
+	select RING_BUFFER
