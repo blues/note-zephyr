@@ -1,0 +1,22 @@
+/**
+ * Copyright (c) 2024 Croxel Inc.
+ *
+ * MIT License. Use of this source code is governed by licenses granted
+ * by the copyright holder including that found in the LICENSE file.
+ */
+
+ /** Note: Not physically connected to the feather. Requires the following:
+  * - Set DFU switch to OFF, to isolate AUX_TX/RX from F_RX/TX, respectively.
+  * - Wire the following lines:
+  *     - N_TX : F_RX.
+  *     - N_RX : F_TX.
+  */
+&feather_serial {
+	status = "okay";
+	current-speed = <9600>;
+
+	notecard {
+		compatible = "blues,notecard";
+		status = "okay";
+	};
+};
