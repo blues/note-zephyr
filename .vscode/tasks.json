@@ -14,7 +14,7 @@
                 "isDefault": true
             },
             "command": [
-                "west build --board ${config:board} --pristine=always ${workspaceFolder}"
+                "west build --board ${config:board} --pristine=always ${workspaceFolder}/example"
             ]
         },
         {
@@ -27,7 +27,7 @@
                 "kind": "build"
             },
             "command": [
-                "west build --board ${config:board} ${workspaceFolder}"
+                "west build --board ${config:board} ${workspaceFolder}/example"
             ]
         },
         {
