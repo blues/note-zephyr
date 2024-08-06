@@ -12,3 +12,7 @@ config BLUES_NOTECARD_HOOKS_HEAP_SIZE
 	default 16384
 	help
 	  Set Total Heap size reserved for Blues Notecard
+
+config BLUES_NOTECARD_PRINTK
+	bool "Enable Notecard messages print-out"
+	default y

@@ -8,6 +8,8 @@
 
 #include <zephyr/kernel.h>
 
+#if defined(BLUES_NOTECARD_PRINTK)
+
 size_t note_debug_print(const char *text)
 {
 	if (text) {
@@ -17,3 +19,11 @@ size_t note_debug_print(const char *text)
 
 	return 0;
 }
+#else
+
+size_t note_debug_print(const char *text)
+{
+	return 0;
+}
+
+#endif
