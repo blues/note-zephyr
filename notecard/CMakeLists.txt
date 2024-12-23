@@ -1,6 +1,3 @@
-# Copyright (c) 2024 Croxel Inc.
-# SPDX-License-Identifier: MIT
-
 zephyr_library()
 zephyr_library_sources(
 	../note-c/n_atof.c

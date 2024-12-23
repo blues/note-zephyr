@@ -1,4 +1,4 @@
-# Copyright (c) 2024 Croxel Inc.
+# Copyright (c) 2025 Blues Inc.
 # SPDX-License-Identifier: MIT
 
 config BLUES_NOTECARD_HOOKS_HEAP_TIMEOUT
@@ -13,6 +13,8 @@ config BLUES_NOTECARD_HOOKS_HEAP_SIZE
 	help
 	  Set Total Heap size reserved for Blues Notecard
 
-config BLUES_NOTECARD_PRINTK
-	bool "Enable Notecard messages print-out"
+config BLUES_NOTECARD_LOGGING
+	bool "Enable Notecard messages logging"
 	default y
+	help
+	  Enable Notecard debug logging

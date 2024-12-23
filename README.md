@@ -1,27 +1,22 @@
-note-zephyr
-===========
+# note-zephyr
 
-Upgrade the Zephyr RTOS "blinky" example with
-[Notecard](https://shop.blues.io/collections/notecard) Communication!
+A `west` compatible [Zephyr RTOS](https://zephyrproject.org/) module for the [Notecard](https://shop.blues.io/collections/notecard). Include this module in your own project manifest and use the `notecard` module to access the Notecard.
 
-Overview
---------
+## Overview
 
-This example is designed to illustrate the ease of adding Notecard functionality
-to an existing application, by building on the original Zephyr example,
-`samples/basic/blinky`.
+This example is designed to demonstrate the ease of adding Notecard functionality
+to an existing Zephyr application.
+To quickly get started, use the `blinky` example, check out the `examples/blinky` project.
 
-Functionally, the modification slows down the processing loop from 1s to 10s,
-and submits a Note to Notehub indicating the current state of the onboard LED.
+## Requirements
 
-Requirements
-------------
+To use this module, we make the following assumptions to make it easier to get started:
 
 ### Hardware
 
-- [Blues Wireless Notecard](https://shop.blues.io/collections/notecard)
-- [Blues Wireless Notecarrier](https://shop.blues.io/collections/notecarrier)
-- [Blues Wireless Swan](https://shop.blues.io/collections/swan)
+- Any [Blues Notecard](https://shop.blues.io/collections/notecard)
+- [Blues Notecarrier F](https://shop.blues.com/products/notecarrier-f)
+- [Blues Swan](https://shop.blues.io/products/swan)
 - [STLINK Programmer/Debugger](https://shop.blues.io/collections/accessories/products/stlink-v3mini)
 
 ### Software
@@ -35,8 +30,7 @@ Requirements
 
 - [Notehub.io](https://notehub.io)
 
-Getting Setup
--------------
+## Getting Setup
 
 ### Notehub.io
 

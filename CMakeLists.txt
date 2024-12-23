@@ -1,2 +1,2 @@
 zephyr_include_directories_ifdef(CONFIG_BLUES_NOTECARD note-c)
-add_subdirectory_ifdef(CONFIG_BLUES_NOTECARD core)
+add_subdirectory_ifdef(CONFIG_BLUES_NOTECARD notecard)

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2024 Croxel Inc.
+ * Copyright (c) 2025 Blues Inc.
  *
  * MIT License. Use of this source code is governed by licenses granted
  * by the copyright holder including that found in the LICENSE file.

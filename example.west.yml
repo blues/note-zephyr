@@ -1,0 +1,7 @@
+projects:
+  # Your other modules here
+  - name: notecard
+    path: modules/notecard
+    revision: main
+    submodules: true
+    url: https://github.com/blues/note-zephyr

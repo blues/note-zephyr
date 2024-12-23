@@ -1,0 +1,2 @@
+rsource "hooks/Kconfig"
+rsource "transport/Kconfig"

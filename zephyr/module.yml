@@ -1,5 +1,5 @@
 build:
   cmake: .
-  kconfig: Kconfig.blues
+  kconfig: Kconfig.notecard
   settings:
     dts_root: .

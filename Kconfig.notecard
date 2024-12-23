@@ -1,6 +1,3 @@
-# Copyright (c) 2024 Croxel Inc.
-# SPDX-License-Identifier: MIT
-
 menuconfig BLUES_NOTECARD
 	bool "Enable Blues Notecard libraries"
 	help
@@ -8,6 +5,6 @@ menuconfig BLUES_NOTECARD
 
 if BLUES_NOTECARD
 
-rsource "core/Kconfig"
+rsource "notecard/Kconfig"
 
 endif # BLUES_NOTECARD

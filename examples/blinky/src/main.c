@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Blues Inc.
+ * Copyright (c) 2025 Blues Inc.
  *
  * MIT License. Use of this source code is governed by licenses granted
  * by the copyright holder including that found in the LICENSE file.
@@ -7,9 +7,9 @@
  * Author: Zachary J. Fields
  */
 
-// Include Zephyr Headers
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/kernel.h>
+#include <zephyr/logging/log.h>
 
 // Include Notecard note-c library
 #include <note.h>
@@ -23,74 +23,64 @@
 #pragma message "PRODUCT_UID is not defined in this example. Please ensure your Notecard has a product identifier set before running this example or define it in code here. More details at https://bit.ly/product-uid"
 #endif
 
-// 10000 msec = 10 sec
 #define SLEEP_TIME_MS 10000
 
-// The devicetree node identifier for the "led0" alias.
 #define LED0_NODE DT_ALIAS(led0)
 
 #if DT_NODE_HAS_STATUS(LED0_NODE, okay)
-
 static const struct gpio_dt_spec led = GPIO_DT_SPEC_GET(LED0_NODE, gpios);
-
 #else
-
-// A build error on this line means your board is unsupported.
-// See the sample documentation for information on how to fix this.
 #error "Unsupported board: led0 devicetree alias is not defined"
-
 #endif
+
+LOG_MODULE_REGISTER(main);
 
 int main(void)
 {
     int ret;
 
-    printk("[INFO] main(): Initializing...\n");
+    LOG_INF("Initializing...");
 
-    // Initialize note-c hooks
-    NoteSetUserAgent((char *)"note-zephyr");
-
-    // Send a Notecard hub.set using note-c
-    J *req = NoteNewRequest("hub.set");
-    if (req)
-    {
-        JAddStringToObject(req, "product", PRODUCT_UID);
-        JAddStringToObject(req, "mode", "continuous");
-        JAddStringToObject(req, "sn", "zephyr-blink");
-        if (!NoteRequest(req))
-        {
-            printk("Failed to configure Notecard.\n");
-            return -1;
-        }
-    }
-    else
-    {
-        printk("Failed to allocate memory.\n");
-        return -1;
-    }
-
-    if (!gpio_is_ready_dt(&led))
-    {
-        printk("Failed to activate LED.\n");
+    if (!gpio_is_ready_dt(&led)) {
+        LOG_ERR("Failed to activate LED.");
         return -1;
     }
 
     ret = gpio_pin_configure_dt(&led, GPIO_OUTPUT_ACTIVE);
     if (ret < 0)
     {
-        printk("Failed to configure LED.\n");
+        LOG_ERR("Failed to configure LED.");
         return ret;
     }
 
-    // Application Loop
-    printk("[INFO] main(): Entering loop...\n");
+    // Initialize note-c hooks
+    NoteSetUserAgent((char *)"note-zephyr");
+
+    // Send a Notecard hub.set using note-c
+    J *req = NoteNewRequest("hub.set");
+    if (req) {
+        JAddStringToObject(req, "product", PRODUCT_UID);
+        JAddStringToObject(req, "mode", "continuous");
+        JAddStringToObject(req, "sn", "zephyr-blink");
+        if (!NoteRequest(req))
+        {
+            LOG_ERR("Failed to configure Notecard.");
+            return -1;
+        }
+    }
+    else {
+        LOG_ERR("Failed to allocate memory.");
+        return -1;
+    }
+
+    LOG_INF("Entering main loop...");
     while (1)
     {
         // Toggle LED state
         ret = gpio_pin_toggle_dt(&led);
         if (ret < 0)
         {
-            printk("Failed to toggle LED.\n");
+            LOG_ERR("Failed to toggle LED.");
             break;
         }
 
@@ -103,19 +93,19 @@ int main(void)
             JAddBoolToObject(body, "LED", gpio_pin_get(led.port, led.pin));
             if (!NoteRequest(req))
             {
-                printk("Failed to submit Note to Notecard.\n");
+                LOG_ERR("Failed to submit Note to Notecard.");
                 ret = -1;
                 break;
             }
+            LOG_INF("Note sent to Notehub.");
         }
         else
         {
-            printk("Failed to allocate memory.\n");
+            LOG_ERR("Failed to allocate memory.");
             ret = -1;
             break;
         }
 
-        // Wait to iterate
         k_msleep(SLEEP_TIME_MS);
     }
 

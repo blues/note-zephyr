@@ -1,5 +1,0 @@
-# Copyright (c) 2024 Croxel Inc.
-# SPDX-License-Identifier: MIT
-
-rsource "hooks/Kconfig"
-rsource "transport/Kconfig"

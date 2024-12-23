@@ -1,0 +1,15 @@
+/* Note: Not physically connected to the feather, when using the Notecarrier-F (https://blues.com/products/notecarrier/notecarrier-f). Requires the following:
+* - Set DFU switch to OFF, to isolate AUX_TX/RX from F_RX/TX, respectively.
+* - Wire the following lines:
+*     - N_TX : F_RX.
+*     - N_RX : F_TX.
+*/
+&feather_serial {
+	status = "okay";
+	current-speed = <115200>;
+
+	notecard {
+		compatible = "blues,notecard";
+		status = "okay";
+	};
+};

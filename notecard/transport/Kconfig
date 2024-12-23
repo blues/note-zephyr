@@ -1,4 +1,5 @@
 # Copyright (c) 2024 Croxel Inc.
+# Copyright (c) 2025 Blues Inc.
 # SPDX-License-Identifier: MIT
 
 config BLUES_NOTECARD_TRANSPORT_I2C
