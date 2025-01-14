@@ -1,0 +1,21 @@
+# Copyright (c) 2024 Croxel Inc.
+# Copyright (c) 2025 Blues Inc.
+# SPDX-License-Identifier: MIT
+
+config BLUES_NOTECARD_TRANSPORT_I2C
+	bool "Notecard Transport over I2C"
+	default y
+	depends on DT_HAS_BLUES_NOTECARD_ENABLED
+	depends on $(dt_compat_on_bus,$(DT_COMPAT_BLUES_NOTECARD),i2c)
+	depends on !BLUES_NOTECARD_TRANSPORT_UART
+	select I2C
+
+config BLUES_NOTECARD_TRANSPORT_UART
+	bool "Notecard Transport over UART"
+	default y
+	depends on DT_HAS_BLUES_NOTECARD_ENABLED
+	depends on $(dt_compat_on_bus,$(DT_COMPAT_BLUES_NOTECARD),uart)
+	depends on !BLUES_NOTECARD_TRANSPORT_I2C
+	select SERIAL
+	select UART_INTERRUPT_DRIVEN
+	select RING_BUFFER

@@ -55,3 +55,6 @@ dkms.conf
 
 # Ignore build output
 build/
+
+# Submodules
+note-c

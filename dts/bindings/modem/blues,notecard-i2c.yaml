@@ -1,0 +1,3 @@
+description: Blues Notecard Modem
+compatible: "blues,notecard"
+include: i2c-device.yaml
