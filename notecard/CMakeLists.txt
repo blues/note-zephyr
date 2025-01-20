@@ -1,4 +1,5 @@
 zephyr_library()
+
 zephyr_library_sources(
 	../note-c/n_atof.c
 	../note-c/n_b64.c
