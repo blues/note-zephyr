@@ -7,4 +7,8 @@ if BLUES_NOTECARD
 
 rsource "notecard/Kconfig"
 
+config REQUIRES_STD_C11
+	bool "Requires C11 for note-c library"
+    default y
+
 endif # BLUES_NOTECARD
