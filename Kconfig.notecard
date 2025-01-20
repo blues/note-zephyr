@@ -1,10 +1,9 @@
 menuconfig BLUES_NOTECARD
+	select REQUIRES_STD_C11
 	bool "Enable Blues Notecard libraries"
 	help
-	  Enable Blues Notecard Libraries to communicate with the Notecard
+	  Enable Blues Notecard Libraries to communicate with the Notecard (requires C11)
 
 if BLUES_NOTECARD
-
 rsource "notecard/Kconfig"
-
 endif # BLUES_NOTECARD
