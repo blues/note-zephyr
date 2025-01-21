@@ -1,0 +1,10 @@
+sample:
+  description: Message queues example
+  name: message-queues
+common:
+  build_only: true
+  integration_platforms:
+    - swan_r5
+    - cygnet
+tests:
+  app.default: {}
