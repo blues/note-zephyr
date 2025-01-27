@@ -3,7 +3,7 @@ manifest:
     - name: note-c
       revision: master
       url: https://github.com/blues/note-c
-      path: modules/lib/note-zephyr/note-c
+      path: note-zephyr/note-c
     - name: zephyr
       revision: main
       url: https://github.com/zephyrproject-rtos/zephyr
