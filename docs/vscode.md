@@ -13,9 +13,9 @@
      1. Select **Terminal > Run Task...** from the application menu.
      1. Select **Zephyr: Build Application** from the drop-down menu.
 
-> _**NOTE:** If you see the following message, then you have failed to update
+> **NOTE:** If you see the following message, then you have failed to update
 > the product UID in the sources, and the Notecard will not be linked with your
-> Notehub project._
+> Notehub project.
 >
 > ```none
 > /workspaces/note-zephyr/src/main.c:26:9: note: '#pragma message: PRODUCT_UID is not defined in this example. Please ensure your Notecard has a product identifier set before running this example or define it in code here. More details at https://bit.ly/product-uid'
@@ -50,11 +50,10 @@ From the Dev Container, use the menu system:
    1. Select **Terminal > Run Task...** from the application menu.
    1. Select **Zephyr: Flash Application (External)** from the drop-down menu.
 
-> _**NOTE:** You must flash your device using the STLINK-V3MINI; DFU is not
-supported._
+> **NOTE:** You must flash your device using the STLINK-V3MINI; DFU is not
+supported.
 
-Debugging
----------
+## Debugging
 
 ### Collecting Serial Logs
 

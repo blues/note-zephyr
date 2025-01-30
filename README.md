@@ -1,6 +1,7 @@
 # note-zephyr
 
-This is a Zephyr `west` module for the Blues Notecard. It is an abstraction layer for the [note-c](https://github.com/blues/note-c) library, that allows you to easily use a [Notecard](https://blues.com/products/notecard/) in a Zephyr application.
+This is a Zephyr `west` module for the Blues Notecard.
+It is an abstraction layer for the [note-c](https://github.com/blues/note-c) library, that allows you to easily use a [Notecard](https://blues.com/products/notecard/) in a Zephyr application.
 
 It supports both `I2C` and `UART` communication with the Notecard as well as utilizing Zephyr native APIs for logging and error handling as well as memory management.
 
@@ -16,10 +17,13 @@ While this module is designed to be used with the Blues' Feather MCU boards, it 
   - [Swan](https://shop.blues.io/products/swan)
 - [STLINK Programmer/Debugger](https://shop.blues.io/collections/accessories/products/stlink-v3mini)
 
-### Software / Cloudware
+### Software
 
-- [Zephyr SDK](https://docs.zephyrproject.org/latest/getting_started)
+- [Zephyr SDK](https://docs.zephyrproject.org/latest/getting_started) (at least 3.7 LTS)
 - [west](https://docs.zephyrproject.org/latest/guides/west/install.html)
+
+### Cloudware
+
 - [Notehub.io](https://notehub.io)
 
 ## Usage
@@ -27,9 +31,10 @@ While this module is designed to be used with the Blues' Feather MCU boards, it 
 The easiest way to use this module is to add it to your project as a module using `west`.
 If you don't have `west` installed, you can install it by following the instructions on the [Zephyr Documentation](https://docs.zephyrproject.org/latest/guides/west/install.html).
 
-### Option 1: Adding note-zephyr to your own project
+### Adding note-zephyr module to your project
 
-To use this module in your Zephyr project, you need to add it to your manifest. For example, if you are managing your project with `west`, you can add it to your `west.yml` manifest like this:
+To use this module in your Zephyr project, you will need to add it to your manifest.
+For example, if you are managing your project with `west`, you can add it to your `west.yml` manifest:
 
 ```yaml
 manifest:
@@ -42,47 +47,39 @@ manifest:
           - hal_stm32
           - cmsis
     - name: note-zephyr
-        path: modules/note-zephyr
-        revision: main
-        submodules: true
-        url: https://github.com/blues/note-zephyr
+      path: modules/note-zephyr
+      revision: main
+      submodules: true
+      url: https://github.com/blues/note-zephyr
     # your other modules here ...
 ```
 
-> **Warning:** `submodules: true` is a REQUIRED option to for the `note-zephyr` module. This is because the `note-c` library is a submodule and dependency of the `note-zephyr` module.
+> **Warning:** `submodules: true` is a REQUIRED option for the `note-zephyr` module. This is because the `note-c` library is a submodule and dependency of the `note-zephyr` module.
 
 You can then run `west update` to fetch the latest changes from the `note-zephyr` module.
 
-To use it in your project, you will need to enable the module in your `prj.conf` file. For example:
+You will also need to enable the module in your `prj.conf` file.
+For example:
 
 ```sh
-CONFIG_NEWLIB_LIBC=y # Required by `note-c`
+# Required by `note-c`
+CONFIG_NEWLIB_LIBC=y
 CONFIG_BLUES_NOTECARD=y
 # Optional: Enable logging
 CONFIG_BLUES_NOTECARD_LOGGING=y
+
 ```
 
 > **Note:** The `CONFIG_NEWLIB_LIBC` option is required by `note-c` and must be enabled in your `prj.conf` along with the `CONFIG_BLUES_NOTECARD` option.
 
-### Option 2: Initialize the repository for development
-
-Once you have `west` installed, you can initialize the repository:
-
-```sh
-west init -m https://github.com/blues/note-zephyr --mr main my-workspace
-cd my-workspace
-west update
-```
-
-This will create a new workspace (`my-workspace`) with the `note-zephyr` project, ready to build.
-
 ## Getting started with examples
 
-To get started with the examples, the easiest thing to do is to follow the instructions for [option 2](#option-2-initialize-the-repository-for-development) above. This will install the dependencies for Blues' Feather MCU boards and allow you to build the examples.
+To try the [examples](examples/README.md) standalone, without importing `note-zephyr` as a module, the easiest thing to do is to follow the instructions for [development](#development) below. This will install the dependencies for Blues' Feather MCU boards and allow you to build the examples.
 
 We're assuming you're using the `swan_r5` board and flashing using an [STLINK](https://shop.blues.io/collections/accessories/products/stlink-v3mini) programmer/debugger.
 
 ```sh
+# from the note-zephyr directory
 west build -b swan_r5 examples/blinky
 west flash
 ```
@@ -90,7 +87,7 @@ west flash
 ### Notehub.io
 
 To see your Notecard data in Notehub, you'll need to set up a free account (no credit card required) on [Notehub.io](https://notehub.io).
-Once you have created youraccount, then you need to [create a project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-simulator/#create-a-notehub-project) to serve as an endpoint for the Notes that are tracking the state of the LED.
+Once you have created your account, then you need to [create a project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-simulator/#create-a-notehub-project) to serve as an endpoint for the Notes that are tracking the state of the LED.
 
 Once you have a project, you will need to update the `define` named `PROJECT_UID` in your `main.c` with [the UID of the project you have just created](https://blues.dev/notehub/notehub-walkthrough/#finding-a-productuid).
 
@@ -100,7 +97,17 @@ The Notecard will be running in `continuous` mode, which will allow it to mainta
 
 For more information about the Notecard API and examples, please visit [our developer site](https://blues.dev).
 
-## Development environments
+## Development
+
+To initialize the repository for development, you can use the following commands:
+
+```sh
+west init -m https://github.com/blues/note-zephyr --mr main my-workspace
+cd my-workspace
+west update
+```
+
+This will create a new workspace (`my-workspace`) with the `note-zephyr` project, ready to build.
 
 ### VSCode
 

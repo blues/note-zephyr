@@ -2,8 +2,7 @@
 
 ## Building the Dev Container
 
-> _**WARNING:** This step is critical to ensure you correctly build the Dev
-Container image._
+> **WARNING:** This step is critical to ensure you correctly build the Dev Container image.
 
 **Linux:**
 
@@ -22,8 +21,8 @@ Perform the following steps, in order to provide USB access:
     ],
     ```
 
-   > _**NOTE:** At the time of writing, it is not possible to share the host USB
-   > from Windows and Mac computers._
+   > **NOTE:** At the time of writing, it is not possible to share the host USB
+   > from Windows and Mac computers.
 
 **Windows/Mac (x86_64):**
 
@@ -41,9 +40,9 @@ Ensure Docker Desktop is running.
     },
     ```
 
-> _**NOTE:** If you failed to properly update `devcontainer.json` before opening
+> **NOTE:** If you failed to properly update `devcontainer.json` before opening
 > the Dev Container, you may need to purge your docker build cache before
-> trying again._
+> trying again.
 >
 > ```none
 > $ docker system prune
