@@ -1,9 +1,0 @@
-&feather_i2c {
-	status = "okay";
-
-	notecard@17 {
-		compatible = "blues,notecard";
-		reg = <0x17>;
-		status = "okay";
-	};
-};

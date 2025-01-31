@@ -5,10 +5,10 @@ It shows how to use the Notecard with both I2C and UART.
 
 ```bash
 # Build for I2C
-west build examples/blinky -b swan_r5 -DDTC_OVERLAY_FILE=i2c.overlay
+west build examples/blinky -b swan_r5 -DDTC_OVERLAY_FILE=../overlays/i2c.overlay
 west flash
 
 # Build for UART
-west build examples/blinky -b swan_r5 -DDTC_OVERLAY_FILE=uart.overlay
+west build examples/blinky -b swan_r5 -DDTC_OVERLAY_FILE=../overlays/uart.overlay
 west flash
 ```

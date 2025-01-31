@@ -1,0 +1,46 @@
+---
+name: Build Examples
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'examples/**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        example:
+          - blinky
+          - message-queues
+        overlay:
+          - i2c.overlay
+          - uart.overlay
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          path: note-zephyr
+          fetch-depth: 1
+          submodules: recursive
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.11
+
+      - name: Setup Zephyr project
+        uses: zephyrproject-rtos/action-zephyr-setup@v1
+        with:
+          app-path: note-zephyr
+          toolchains: arm-zephyr-eabi
+
+      - name: Build ${{ matrix.example }} with ${{ matrix.overlay }}
+        working-directory: note-zephyr/examples/${{ matrix.example }}
+        shell: bash
+        run: |
+          west build -p -b swan_r5 . -- -DDTC_OVERLAY_FILE=../overlays/${{ matrix.overlay }}
