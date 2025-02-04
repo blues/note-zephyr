@@ -15,7 +15,7 @@
     // installation, see:
     // https://docs.zephyrproject.org/latest/develop/getting_started/index.html#get-zephyr-and-install-python-dependencies
     // https://docs.zephyrproject.org/latest/develop/west/config.html#built-in-configuration-options
-    "zephyr_base":"${env:HOME}/zephyrproject/zephyr",
+    "zephyr_base":"/workdir/zephyr",
 
     // If necessary, update the value of `zephyr_sdk_path` to match your
     // environment. The value provided has been selected based on the

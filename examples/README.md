@@ -1,6 +1,6 @@
-# note-zephyr examples
+# Examples
 
-## getting started
+## Getting started
 
 These examples demonstrate how to use the Notecard with Zephyr. Examples include:
 
