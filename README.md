@@ -111,8 +111,14 @@ This will create a new workspace (`my-workspace`) with the `note-zephyr` project
 
 ### VSCode
 
-See [docs/vscode.md](docs/vscode.md) for more information.
+You can also use VSCode & a Dev Container to develop with this module.
+`git clone` the repository and open the directory in VSCode.
 
-### Dev Container
+You'll then want to open the directory in a Dev Container, which will allow you to use the Zephyr SDK and other dependencies (without having to install them on your host machine).
 
-See [docs/dev-container.md](docs/dev-container.md) for more information.
+Opening the directory in VSCode, you should see a popup asking if you want to open the folder in a Dev Container.
+Click `Open in Container`.
+
+You can then build an example application by opening the command palette and selecting `Zephyr: Build Example Application`.
+
+See [docs/development.md](docs/development.md) for more information about the Dev Container.

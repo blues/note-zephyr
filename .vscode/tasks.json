@@ -4,7 +4,7 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "Zephyr: Build Application",
+            "label": "Zephyr: Build Example Application",
             "type": "shell",
             "problemMatcher": [
                 "$gcc"
@@ -14,11 +14,11 @@
                 "isDefault": true
             },
             "command": [
-                "west build --board ${config:board} --pristine=always ${workspaceFolder}"
+                "west build --board ${config:board} --pristine=always ${workspaceFolder}/examples/${input:project}"
             ]
         },
         {
-            "label": "Zephyr: Rebuild Application",
+            "label": "Zephyr: Rebuild Example Application",
             "type": "shell",
             "problemMatcher": [
                 "$gcc"
@@ -27,7 +27,7 @@
                 "kind": "build"
             },
             "command": [
-                "west build --board ${config:board} ${workspaceFolder}"
+                "west build --board ${config:board} ${workspaceFolder}/examples/${input:project}"
             ]
         },
         {
@@ -89,5 +89,13 @@
                 "ninja menuconfig"
             ]
         }
+    ],
+    "inputs": [
+        {
+            "id": "project",
+            "description": "Project:",
+            "default": "blinky",
+            "type": "promptString"
+        },
     ]
 }

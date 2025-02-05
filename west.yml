@@ -1,13 +1,20 @@
 manifest:
   projects:
-    - name: note-c
-      revision: master
-      url: https://github.com/blues/note-c
-      path: note-zephyr/note-c
     - name: zephyr
       revision: main
       url: https://github.com/zephyrproject-rtos/zephyr
       import:
-       name-allowlist:
-          - hal_stm32
+        name-allowlist:
           - cmsis
+          - hal_stm32
+    - name: note-c
+      revision: master
+      url: https://github.com/blues/note-c
+      path: note-zephyr/note-c
+    - name: mcuboot
+      url: https://github.com/zephyrproject-rtos/mcuboot
+      revision: main
+      path: bootloader/mcuboot
+
+  self:
+    path: .
