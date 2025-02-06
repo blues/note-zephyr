@@ -5,6 +5,7 @@ zephyr_library_sources(
 	../note-c/n_b64.c
 	../note-c/n_cjson.c
 	../note-c/n_cjson_helpers.c
+	../note-c/n_cobs.c
 	../note-c/n_const.c
 	../note-c/n_ftoa.c
 	../note-c/n_helpers.c
