@@ -17,6 +17,7 @@ jobs:
         example:
           - blinky
           - message-queues
+          - binary
         overlay:
           - i2c.overlay
           - uart.overlay
