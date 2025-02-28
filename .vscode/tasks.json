@@ -4,7 +4,7 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "Zephyr: Build Example Application",
+            "label": "Zephyr: Build",
             "type": "shell",
             "problemMatcher": [
                 "$gcc"
@@ -14,57 +14,43 @@
                 "isDefault": true
             },
             "command": [
-                "west build --board ${config:board} --pristine=always ${workspaceFolder}/examples/${input:project}"
-            ]
+                "west build --board ${input:board} --pristine=always ${input:app_dir}"
+            ],
+            "detail": "Builds the project"
         },
         {
-            "label": "Zephyr: Rebuild Example Application",
+            "label": "Zephyr: Rebuild",
             "type": "shell",
             "problemMatcher": [
                 "$gcc"
             ],
             "group": {
-                "kind": "build"
+                "kind": "build",
+                "isDefault": true
             },
             "command": [
-                "west build --board ${config:board} ${workspaceFolder}/examples/${input:project}"
-            ]
+                "west build --board ${input:board} --pristine=auto"
+            ],
+            "detail": "Rebuilds the project",
+            "runOptions": { "reevaluateOnRerun": false}
         },
         {
-            "label": "Zephyr: Flash Firmware (Container)",
+            "label": "Zephyr: Flash Firmware",
             "type": "shell",
             "problemMatcher": [],
             "command": [
                 "west flash"
-            ]
+            ],
+            "detail": "Flashes firmware to a board"
         },
         {
             "label": "Zephyr: Flash Firmware (External)",
             "type": "shell",
             "problemMatcher": [],
             "command": [
-                "{ echo \"reset halt; program {${hostWorkspaceFolder}/build/zephyr/zephyr.elf} verify reset; sleep 0; exit;\" >&3; cat <&3-; } 3<> /dev/tcp/host.docker.internal/4444"
-            ]
-        },
-        {
-            "label": "Zephyr: Rebuild and Flash Firmware (Container)",
-            "type": "shell",
-            "problemMatcher": [],
-            "dependsOn": [
-                "Zephyr: Rebuild Application",
-                "Zephyr: Flash Firmware (Container)"
+                "{ echo \"reset halt; program build/zephyr/zephyr.elf verify reset; sleep 0; exit;\" >&3; cat <&3-; } 3<> /dev/tcp/host.docker.internal/4444"
             ],
-            "dependsOrder": "sequence"
-        },
-        {
-            "label": "Zephyr: Rebuild and Flash Firmware (External)",
-            "type": "shell",
-            "problemMatcher": [],
-            "dependsOn": [
-                "Zephyr: Rebuild Application",
-                "Zephyr: Flash Firmware (External)"
-            ],
-            "dependsOrder": "sequence"
+            "detail": "Flashes firmware to a board via the external programmer"
         },
         {
             "label": "Zephyr: List Boards",
@@ -72,10 +58,11 @@
             "problemMatcher": [],
             "command": [
                 "west boards"
-            ]
+            ],
+            "detail": "Lists all available boards"
         },
         {
-            "label": "Zephyr: Menu Config",
+            "label": "Zephyr: Menuconfig",
             "type": "shell",
             "options": {
                 "cwd": "${workspaceFolder}/build",
@@ -87,8 +74,21 @@
             "problemMatcher": [],
             "command": [
                 "ninja menuconfig"
-            ]
-        }
+            ],
+            "detail": "Opens the Zephyr menuconfig"
+        },
+        {
+            "label": "Zephyr: Generate SBOM",
+            "type": "shell",
+            "command": "west spdx --init -d build && west build -b ${input:board} ${input:app_dir} -- -DCONFIG_BUILD_OUTPUT_META=y && west spdx -d build && echo 'SBOM generated successfully in build/spdx/' && ls -la build/spdx/",
+            "group": "build",
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            },
+            "detail": "Builds the project with metadata enabled and generates SPDX SBOM documents"
+        },
     ],
     "inputs": [
         {
@@ -97,5 +97,20 @@
             "default": "blinky",
             "type": "promptString"
         },
+        {
+            "id": "board",
+            "type": "pickString",
+            "description": "Select the target board",
+            "options": [
+                "swan_r5",
+            ],
+            "default": "swan_r5"
+        },
+        {
+            "id": "app_dir",
+            "type": "promptString",
+            "description": "Application directory (e.g. 'app', 'examples/blinky')",
+            "default": "app"
+        }
     ]
 }

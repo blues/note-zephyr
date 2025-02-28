@@ -6,12 +6,14 @@
 		"vscode": {
 			"extensions": [
 				"ms-vscode.cpptools",
+				"ms-vscode.cpptools-extension-pack",
 				"ms-vscode.cmake-tools",
 				"twxs.cmake",
 				"ms-python.python",
 				"ms-vscode.vscode-serial-monitor",
-				"shardulm94.trailing-spaces",
-				"trond-snekvik.devicetree"
+				"trond-snekvik.devicetree",
+				"marus25.cortex-debug",
+				"marus25.cortex-debug-dp-stm32l4"
 			],
 			"settings": {
 				"devicetree.defaultBoard": "swan_r5"
@@ -22,7 +24,7 @@
 	"remoteUser": "root",
 
 	"runArgs": [
-		"--privileged"
+		"--privileged" // You may wish to use mounts for binding USB devices instead. See https://code.visualstudio.com/remote/advancedcontainers/add-local-file-mount for /dev/bus/usb
 	],
 
 	"workspaceMount": "source=${localWorkspaceFolder},target=/workdir/note-zephyr,type=bind,consistency=cached",
