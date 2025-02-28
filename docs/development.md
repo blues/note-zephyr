@@ -1,6 +1,6 @@
 # Development
 
-Building and flashing applications is provided by the `west` tool, with the exception of the `external` tasks. We provide [tasks](../.vscode/tasks.json) in VS Code to make it easier to build and flash applications.
+Building and flashing applications is provided by the `west` tool, with the exception of the `external` tasks. We provide [tasks](../.vscode/tasks.json) in VSCode to make it easier to build and flash applications.
 
 ## Compiling
 
@@ -20,7 +20,7 @@ west build -b swan_r5 examples/blinky
 
 ### Local
 
-From the VS Code, use the menu system:
+From the VSCode, use the menu system:
 
 1. Select **Terminal > Run Task...** from the application menu.
 1. Select **Zephyr: Flash Application** from the drop-down menu.

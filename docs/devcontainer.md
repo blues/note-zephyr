@@ -36,7 +36,7 @@ To enable flashing and debugging from the container on Windows or MacOS, you wil
 openocd -f swan_r5.cfg
 ```
 
-> **WARNING:** You should launch openocd from a terminal or outside process; _outside_ of VS Code as the IDE will restart upon opening the devcontainer.
+> **WARNING:** You should launch openocd from a terminal or outside process; _outside_ of VSCode as the IDE will restart upon opening the devcontainer.
 
 ## Launching the Devcontainer
 
