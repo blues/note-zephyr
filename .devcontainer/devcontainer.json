@@ -10,8 +10,9 @@
 				"twxs.cmake",
 				"ms-python.python",
 				"ms-vscode.vscode-serial-monitor",
-				"shardulm94.trailing-spaces",
-				"trond-snekvik.devicetree"
+				"trond-snekvik.devicetree",
+				"marus25.cortex-debug",
+				"marus25.cortex-debug-dp-stm32l4"
 			],
 			"settings": {
 				"devicetree.defaultBoard": "swan_r5"
@@ -25,8 +26,21 @@
 		"--privileged"
 	],
 
+	// TODO: Uncomment if you are using Linux and want to use the native USB debugger
+	// "mounts": [
+	// 	{
+	// 		"type": "bind",
+	// 		"source": "/dev/bus/usb",
+	// 		"target": "/dev/bus/usb"
+	// 	}
+	// ],
+
 	"workspaceMount": "source=${localWorkspaceFolder},target=/workdir/note-zephyr,type=bind,consistency=cached",
 	"workspaceFolder": "/workdir/note-zephyr",
 
-	"onCreateCommand": "bash -i ${containerWorkspaceFolder}/.devcontainer/onCreateCommand.sh"
+	"onCreateCommand": "bash -i ${containerWorkspaceFolder}/.devcontainer/onCreateCommand.sh",
+
+	"appPort": [
+		"3333:3333"
+	]
 }

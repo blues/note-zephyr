@@ -4,7 +4,7 @@
             "name": "Linux",
             "includePath": [
                 "${workspaceFolder}/**",
-                "${config:zephyr_base}/build/zephyr/include/**",
+                "${workspaceFolder}/build/zephyr/include/**",
                 "${config:zephyr_base}/include/zephyr/**"
             ],
             "defines": [],
