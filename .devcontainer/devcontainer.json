@@ -6,6 +6,7 @@
 		"vscode": {
 			"extensions": [
 				"ms-vscode.cpptools",
+				"ms-vscode.cpptools-extension-pack",
 				"ms-vscode.cmake-tools",
 				"twxs.cmake",
 				"ms-python.python",
@@ -38,9 +39,5 @@
 	"workspaceMount": "source=${localWorkspaceFolder},target=/workdir/note-zephyr,type=bind,consistency=cached",
 	"workspaceFolder": "/workdir/note-zephyr",
 
-	"onCreateCommand": "bash -i ${containerWorkspaceFolder}/.devcontainer/onCreateCommand.sh",
-
-	"appPort": [
-		"3333:3333"
-	]
+	"onCreateCommand": "bash -i ${containerWorkspaceFolder}/.devcontainer/onCreateCommand.sh"
 }

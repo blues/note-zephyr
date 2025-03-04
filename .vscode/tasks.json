@@ -29,9 +29,10 @@
                 "isDefault": true
             },
             "command": [
-                "west build --board ${input:board} --pristine=auto ${input:app_dir}"
+                "west build --board ${input:board} --pristine=auto"
             ],
-            "detail": "Rebuilds the project"
+            "detail": "Rebuilds the project",
+            "runOptions": { "reevaluateOnRerun": false}
         },
         {
             "label": "Zephyr: Flash Firmware",

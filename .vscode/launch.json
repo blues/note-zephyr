@@ -20,9 +20,10 @@
             "rtos": "Zephyr",
             "cwd": "${workspaceFolder}",
             "executable": "${workspaceFolder}/build/zephyr/zephyr.elf",
-            "serverpath": "${config:zephyr_sdk_path}/sysroots/${config:zephyr_sdk_arch}-pokysdk-linux/usr/bin/openocd",
+            // "serverpath": "${config:zephyr_sdk_path}/sysroots/${config:zephyr_sdk_arch}-pokysdk-linux/usr/bin/openocd", // You may need to set this path manually, if cortex-debug cannot find it
             "runToEntryPoint": "main",
             "servertype": "openocd",
+            "showDevDebugOutput": "raw",
             "interface": "swd",
             "configFiles": [
                 "${workspaceFolder}/tools/openocd/${input:selectBoard}.cfg"
