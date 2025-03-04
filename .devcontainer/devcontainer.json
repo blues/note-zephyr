@@ -24,17 +24,8 @@
 	"remoteUser": "root",
 
 	"runArgs": [
-		"--privileged"
+		"--privileged" // You may wish to use mounts for binding USB devices instead. See https://code.visualstudio.com/remote/advancedcontainers/add-local-file-mount for /dev/bus/usb
 	],
-
-	// TODO: Uncomment if you are using Linux and want to use the native USB debugger
-	// "mounts": [
-	// 	{
-	// 		"type": "bind",
-	// 		"source": "/dev/bus/usb",
-	// 		"target": "/dev/bus/usb"
-	// 	}
-	// ],
 
 	"workspaceMount": "source=${localWorkspaceFolder},target=/workdir/note-zephyr,type=bind,consistency=cached",
 	"workspaceFolder": "/workdir/note-zephyr",
