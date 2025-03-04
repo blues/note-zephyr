@@ -117,6 +117,23 @@ You can also use VSCode with or without a devcontainer to develop with this modu
 Opening the directory in VSCode, you should see a popup asking if you want to open the folder in a devcontainer.
 Click `Open in Container`.
 
-You can then build an example application by opening the command palette and selecting `Zephyr: Build` and specifying the board you want to build for, e.g. `swan_r5`, then the example you want to build, e.g. `blinky`.
+You can then build an example application by opening the command palette and selecting `Zephyr: Build` and specifying the board you want to build for, e.g. `swan_r5`, then the example you want to build, e.g. `examples/blinky`.
 
-See the [docs](docs/README.md) for more information about the Dev Container.
+See the [docs](docs/README.md) for more information about the devcontainer.
+
+## Starting a new project
+
+To start a new project, create a new directory, e.g. `app`, in the root of the repository and add the following files:
+
+```bash
+app
+├── CMakeLists.txt
+├── README.md
+├── prj.conf
+└── src
+    └── main.c
+```
+
+You may wish to copy across the files from the `examples/blinky` directory to get started.
+
+You can then build the application by opening the command palette and selecting `Zephyr: Build` and specifying the board you want to build for, e.g. `swan_r5`, then your project directory, e.g. `app`.
