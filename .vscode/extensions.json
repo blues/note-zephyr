@@ -8,5 +8,9 @@
         "trond-snekvik.devicetree",
         "marus25.cortex-debug",
         "marus25.cortex-debug-dp-stm32l4"
+    ],
+    "unwantedRecommendations": [
+        "ms-vscode.cpptools-extension-pack",
+        "ms-vscode.cpptools-themes"
     ]
 }
