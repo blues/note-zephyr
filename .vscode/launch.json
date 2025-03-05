@@ -28,7 +28,7 @@
             "configFiles": [
                 "${workspaceFolder}/tools/openocd/${input:selectBoard}.cfg"
             ],
-            "gdbPath": "${config:zephyr_sdk_path}/arm-zephyr-eabi/bin/arm-zephyr-eabi-gdb",
+            "gdbPath": "${env:ZSDK_PATH}/arm-zephyr-eabi/bin/arm-zephyr-eabi-gdb",
             "postLaunchCommands": [
                 "monitor reset halt",
                 "maintenance flush register-cache",
