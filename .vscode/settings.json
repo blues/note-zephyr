@@ -1,4 +1,10 @@
 {
+    // Update the `vendor` value to the vendor of the board you wish to target.
+    // This value is used to locate the board support files during debugging.
+    // If you are unsure of the vendor, you can find it in the `boards` folder
+    // of the Zephyr base directory.
+    "vendor":"blues",
+
     // Update the `board` value to the board type you wish to target.
     // For a list of supported boards, run the "Zephyr: List Boards" task.
     "board":"swan_r5",
@@ -17,5 +23,5 @@
     // installation, see:
     // https://docs.zephyrproject.org/latest/develop/getting_started/index.html#install-zephyr-sdk
     "zephyr_sdk_path": "${env:ZSDK_PATH}", // /opt/toolchains/zephyr-sdk-0.16.9
-    "zephyr_sdk_arch": "${env:ZSDK_ARCH}", // aarch64, x86_64, etc.
+    "zephyr_sdk_arch": "${env:HOSTTYPE}", // aarch64, x86_64, etc.
 }
