@@ -14,15 +14,6 @@
 // Include Notecard note-c library
 #include <note.h>
 
-// Uncomment the define below and replace com.your-company:your-product-name
-// with your ProductUID.
-// #define PRODUCT_UID "com.your-company:your-product-name"
-
-#ifndef PRODUCT_UID
-#define PRODUCT_UID ""
-#pragma message "PRODUCT_UID is not defined in this example. Please ensure your Notecard has a product identifier set before running this example or define it in code here. More details at https://bit.ly/product-uid"
-#endif
-
 #define SLEEP_TIME_MS 10000
 
 #define LED0_NODE DT_ALIAS(led0)
@@ -59,7 +50,7 @@ int main(void)
     // Send a Notecard hub.set using note-c
     J *req = NoteNewRequest("hub.set");
     if (req) {
-        JAddStringToObject(req, "product", PRODUCT_UID);
+        JAddStringToObject(req, "product", CONFIG_BLUES_NOTEHUB_PRODUCT_UID);
         JAddStringToObject(req, "mode", "continuous");
         JAddStringToObject(req, "sn", "zephyr-blink");
         if (!NoteRequest(req))
