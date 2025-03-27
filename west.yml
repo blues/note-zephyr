@@ -7,10 +7,6 @@ manifest:
         name-allowlist:
           - cmsis
           - hal_stm32
-    - name: note-c
-      revision: master
-      url: https://github.com/blues/note-c
-      path: note-zephyr/note-c
     - name: mcuboot
       url: https://github.com/zephyrproject-rtos/mcuboot
       revision: main

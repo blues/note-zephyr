@@ -1,32 +1,70 @@
+// For format details, see https://aka.ms/devcontainer.json. For config options, see the README at:
+// https://github.com/microsoft/vscode-dev-containers/tree/v0.205.2/containers/docker-existing-dockerfile
 {
 	"name": "Zephyr Development Environment Dockerfile",
-	"image": "zephyrprojectrtos/zephyr-build:v0.26-branch",
 
+	// Sets the run context to one level up instead of the .devcontainer folder.
+	"context": "..",
+
+	// Update the 'dockerFile' property if you aren't using the standard 'Dockerfile' filename.
+	// "image": "ghcr.io/blues/zephyr_c_ci:latest",
+	"dockerFile": "../Dockerfile",
+
+	// Customize devcontainer environment
 	"customizations": {
 		"vscode": {
+			// Install extensions
 			"extensions": [
-				"ms-vscode.cpptools",
-				"ms-vscode.cmake-tools",
-				"twxs.cmake",
+				"marus25.cortex-debug",
+				"marus25.cortex-debug-dp-stm32l4",
 				"ms-python.python",
+				"ms-vscode.cmake-tools",
+				"ms-vscode.cpptools",
 				"ms-vscode.vscode-serial-monitor",
-				"shardulm94.trailing-spaces",
 				"trond-snekvik.devicetree"
 			],
+			"unwantedRecommendations": [
+				"ms-vscode.cpptools-extension-pack",
+				"ms-vscode.cpptools-themes"
+			],
+
+			// Set *default* container specific settings.json values on container create.
 			"settings": {
-				"devicetree.defaultBoard": "swan_r5"
+				"cmake.configureOnOpen": false,
+				"devicetree.defaultBoard": "swan_r5",
+				"terminal.integrated.defaultProfile.linux": "bash",
+				"terminal.integrated.shell.linux": "/bin/bash",
+				"terminal.integrated.shellArgs.linux": [],
+				"terminal.integrated.defaultProfile.osx": "bash",
+				"terminal.integrated.shell.osx": "/bin/bash",
+				"terminal.integrated.shellArgs.osx": [],
+				"terminal.integrated.defaultProfile.windows": "bash",
+				"terminal.integrated.shell.windows": "C:\\Windows\\System32\\bash.exe",
+				"terminal.integrated.shellArgs.windows": ["-c", "wsl.exe"]
 			}
 		}
 	},
 
-	"remoteUser": "root",
+	// Use 'forwardPorts' to make a list of ports inside the container available locally.
+	// "forwardPorts": [],
 
+	// Uncomment the next line to run commands after the container is created - for example installing curl.
+	"onCreateCommand": ".devcontainer/onCreateCommand.sh",
+	// "postCreateCommand": "apt-get update && apt-get install -y curl",
+
+	// Uncomment when using a ptrace-based debugger like C++, Go, and Rust
 	"runArgs": [
+		// "--device=/dev/bus/usb/"
 		"--privileged"
 	],
 
-	"workspaceMount": "source=${localWorkspaceFolder},target=/workdir/note-zephyr,type=bind,consistency=cached",
-	"workspaceFolder": "/workdir/note-zephyr",
+	// Uncomment to use the Docker CLI from inside the container. See https://aka.ms/vscode-remote/samples/docker-from-docker.
+	// "mounts": [ "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind" ],
 
-	"onCreateCommand": "bash -i ${containerWorkspaceFolder}/.devcontainer/onCreateCommand.sh"
+	// Map directory structure to the standard Zephyr configuration
+	"workspaceMount": "source=${localWorkspaceFolder},target=/workdir/note-zephyr,type=bind,consistency=cached",
+	"workspaceFolder": "/workdir/note-zephyr"
+
+	// Uncomment to connect as a non-default user if you've added one. See https://aka.ms/vscode-remote/containers/non-root.
+	// "remoteUser": "user"
 }

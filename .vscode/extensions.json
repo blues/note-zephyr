@@ -1,0 +1,15 @@
+{
+    "recommendations": [
+        "marus25.cortex-debug",
+        "marus25.cortex-debug-dp-stm32l4",
+        "ms-python.python",
+        "ms-vscode.cpptools",
+        "ms-vscode.cmake-tools",
+        "ms-vscode.vscode-serial-monitor",
+        "trond-snekvik.devicetree"
+    ],
+    "unwantedRecommendations": [
+        "ms-vscode.cpptools-extension-pack",
+        "ms-vscode.cpptools-themes"
+    ]
+}
