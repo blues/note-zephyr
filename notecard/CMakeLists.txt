@@ -26,3 +26,7 @@ zephyr_include_directories(
 
 add_subdirectory(hooks)
 add_subdirectory(transport)
+
+if(CONFIG_BLUES_NOTEHUB_PRODUCT_UID STREQUAL "")
+message(WARNING "Product UID is not set. Please ensure your Notecard has a product identifier with a value set before running this example. Set it with CONFIG_BLUES_NOTEHUB_PRODUCT_UID in your prj.conf file.")
+endif()

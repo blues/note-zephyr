@@ -5,5 +5,13 @@ menuconfig BLUES_NOTECARD
 	  Enable Blues Notecard Libraries to communicate with the Notecard (requires C11)
 
 if BLUES_NOTECARD
+config BLUES_NOTEHUB_PRODUCT_UID
+	string "Notehub Product UID"
+	default ""
+	help
+	  The Product UID for your Notehub project.
+	  Leave empty if you want to set this programmatically.
+	  See https://dev.blues.io/notehub/notehub-walkthrough/#finding-a-productuid for more information.
+
 rsource "notecard/Kconfig"
 endif # BLUES_NOTECARD
