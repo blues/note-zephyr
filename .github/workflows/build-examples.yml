@@ -4,8 +4,6 @@ name: Build Examples
 on:
   pull_request:
     branches: [main]
-    paths:
-      - 'examples/**'
 
 jobs:
   build:
