@@ -8,9 +8,13 @@
 LOG_MODULE_REGISTER(main, CONFIG_LOG_DEFAULT_LEVEL);
 
 #define BUTTON_NODE DT_ALIAS(sw0)
+#if !DT_NODE_HAS_STATUS_OKAY(BUTTON_NODE)
+#error "Unsupported board: sw0 devicetree alias is not defined"
+#endif
 #define BUTTON_PIN  DT_GPIO_PIN(BUTTON_NODE, gpios)
 
-static const struct gpio_dt_spec button = GPIO_DT_SPEC_GET(BUTTON_NODE, gpios);
+static const struct gpio_dt_spec button = GPIO_DT_SPEC_GET_OR(BUTTON_NODE, gpios,
+							      {0});
 static struct gpio_callback button_cb_data;
 
 #define STACK_SIZE 1024
@@ -128,9 +132,10 @@ int main(void)
     }
 
     // Initialize button GPIO
-    ret = device_is_ready(button.port);
+    ret = !gpio_is_ready_dt(&button);
     if (ret != 0) {
-        LOG_ERR("Error: button device not ready");
+        LOG_ERR("Error: button device %s is not ready\n",
+		       button.port->name);
         return ret;
     }
 
