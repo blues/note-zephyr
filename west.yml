@@ -11,6 +11,3 @@ manifest:
       url: https://github.com/zephyrproject-rtos/mcuboot
       revision: main
       path: bootloader/mcuboot
-
-  self:
-    path: .
