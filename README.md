@@ -19,7 +19,7 @@ While this module is designed to be used with the Blues' Feather MCU boards, it 
 
 ### Software
 
-- [Zephyr SDK](https://docs.zephyrproject.org/latest/getting_started) (at least 3.7 LTS)
+- [Zephyr SDK](https://docs.zephyrproject.org/3.7.0/develop/getting_started/index.html) (at least 3.7 LTS)
 - [west](https://docs.zephyrproject.org/latest/guides/west/install.html)
 
 ### Cloudware
@@ -45,7 +45,7 @@ manifest:
       import:
        name-allowlist:
           - hal_stm32
-          - cmsis
+          - cmsis_6
     - name: note-zephyr
       path: modules/note-zephyr
       revision: main

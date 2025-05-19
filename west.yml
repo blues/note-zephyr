@@ -1,3 +1,4 @@
+# ONLY FOR LOCALLY BUILDING NOTE-ZEPHYR
 manifest:
   projects:
     - name: zephyr
@@ -5,9 +6,5 @@ manifest:
       url: https://github.com/zephyrproject-rtos/zephyr
       import:
         name-allowlist:
-          - cmsis
+          - cmsis_6
           - hal_stm32
-    - name: mcuboot
-      url: https://github.com/zephyrproject-rtos/mcuboot
-      revision: main
-      path: bootloader/mcuboot
