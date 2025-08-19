@@ -100,8 +100,6 @@ int init_notecard(void)
 {
     J *req = NULL;
 
-    NoteSetUserAgent((char *)"note-zephyr");
-
     req = NoteNewRequest("hub.set");
     if (!req) {
         LOG_ERR("Failed to allocate memory for hub.set request");

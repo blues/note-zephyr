@@ -81,8 +81,5 @@ SHELL_CMD_REGISTER(notecard, &notecard_cmds, "Notecard commands", NULL);
 
 int main(void)
 {
-    // Initialize note-c hooks
-    NoteSetUserAgent((char *)"note-zephyr");
-
     return 0;
 }
