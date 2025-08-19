@@ -44,9 +44,6 @@ int main(void)
         return ret;
     }
 
-    // Initialize note-c hooks
-    NoteSetUserAgent((char *)"note-zephyr");
-
     // Send a Notecard hub.set using note-c
     J *req = NoteNewRequest("hub.set");
     if (req) {
