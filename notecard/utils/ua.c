@@ -10,7 +10,7 @@
 
 static int note_user_agent_register(void)
 {
-	NoteSetUserAgent((char *)"note-zephyr");
+	NoteSetUserAgent((char *)("note-zephyr " NOTE_ZEPHYR_VERSION));
 
 	return 0;
 }
