@@ -72,6 +72,46 @@ CONFIG_BLUES_NOTECARD_LOGGING=y
 
 > **Note:** The `CONFIG_NEWLIB_LIBC` option is required by `note-c` and must be enabled in your `prj.conf` along with the `CONFIG_BLUES_NOTECARD` option.
 
+## Thread Safety
+
+The component automatically provides thread-safe access to the Notecard in multi-threaded Zephyr applications.
+The underlying note-c library protects the Notecard from concurrent access using internal mutexes,
+so no additional locking is required for normal use.
+
+### I2C Bus Sharing
+
+If you have other I2C peripherals on the same bus as the Notecard, register your I2C mutex with note-c using `NoteSetFnI2CMutex()` to minimize the time spent under lock.
+
+For your convenience, we have provided a default implementation of I2C mutex APIs to coordinate access (example shown below):
+
+```c
+#include "hooks/hooks.h"
+
+// Access your I2C peripherals
+note_platform_i2c_lock();
+i2c_write(my_peripheral_device, data, len);
+note_platform_i2c_unlock();
+```
+
+This ensures the note-c library won't attempt I2C communication while you're accessing your other peripherals.
+
+In order to enable/disable the provided I2C bus mutex (e.g. when using your own mutex), use Kconfig:
+
+```sh
+CONFIG_BLUES_NOTECARD_I2C_MUTEX=y  # Enabled by default
+```
+
+Or via menuconfig:
+
+```text
+Symbol: BLUES_NOTECARD_I2C_MUTEX [=y]
+Type  : bool
+Defined at modules/note-zephyr/notecard/hooks/Kconfig:22
+  Prompt: Enable I2C mutex protection
+```
+
+> **Note:** IMPORTANT: The I2C mutex is enabled by default.
+
 ## Getting started with examples
 
 To try the [examples](examples/README.md) standalone, without importing `note-zephyr` as a module, the easiest thing to do is to follow the instructions for [development](#development) below. This will install the dependencies for Blues' Feather MCU boards and allow you to build the examples.
