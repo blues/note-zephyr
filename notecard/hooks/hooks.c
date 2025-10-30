@@ -17,6 +17,12 @@ static int note_hooks_register(void)
 
 	NoteSetFnDebugOutput(note_debug_print);
 
+	NoteSetFnNoteMutex(note_platform_note_lock, note_platform_note_unlock);
+
+#ifdef CONFIG_BLUES_NOTECARD_I2C_MUTEX
+	NoteSetFnI2CMutex(note_platform_i2c_lock, note_platform_i2c_unlock);
+#endif
+
 	return 0;
 }
 

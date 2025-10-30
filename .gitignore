@@ -55,6 +55,8 @@ dkms.conf
 
 # Ignore build output
 build/
+CMakeFiles/
+CMakeCache.txt
 
 # Submodules
 note-c
