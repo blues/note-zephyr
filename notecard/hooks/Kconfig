@@ -18,3 +18,9 @@ config BLUES_NOTECARD_LOGGING
 	default y
 	help
 	  Enable Notecard debug logging
+
+config BLUES_NOTECARD_I2C_MUTEX
+	bool "Enable I2C mutex protection"
+	default y
+	help
+	  Enable mutex protection for I2C operations

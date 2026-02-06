@@ -21,4 +21,10 @@ void note_time_delay(uint32_t ms);
 /* Print Utility Hooks */
 size_t note_debug_print(const char *text);
 
+/* Mutex Hooks */
+void note_platform_note_lock(void);
+void note_platform_note_unlock(void);
+void note_platform_i2c_lock(void);
+void note_platform_i2c_unlock(void);
+
 #endif /* _NOTE_CORE_HOOKS_H_ */

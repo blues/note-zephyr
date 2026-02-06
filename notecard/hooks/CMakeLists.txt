@@ -3,4 +3,5 @@ zephyr_library_sources(
 	time.c
 	print.c
 	hooks.c
+	mutex.c
 )
