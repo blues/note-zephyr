@@ -1,0 +1,37 @@
+/*
+ * USB Serial (CDC-ACM host) overlay for the Blues Notecard.
+ *
+ * This overlay configures the on-chip USB OTG peripheral as a USB host
+ * controller so the Zephyr application can communicate with the Notecard
+ * via its USB-C port.
+ *
+ * Hardware requirements:
+ *   - Host MCU must support USB OTG host mode (e.g. STM32L4R5 on Swan R5)
+ *   - Notecard connected via USB cable to the host MCU's USB OTG port
+ *
+ * To use this overlay add the following to your prj.conf:
+ *   CONFIG_BLUES_NOTECARD_TRANSPORT_USB_SERIAL=y
+ *
+ * Build example (Swan R5 board):
+ *   west build -b swan_r5 examples/blinky -- \
+ *     -DEXTRA_DTC_OVERLAY_FILE=../overlays/usb-serial.overlay
+ *
+ * The USB host controller device label below (usb_otg_fs) is board-specific.
+ * Adjust for your target platform if needed.
+ */
+
+/* Configure the USB OTG peripheral as a USB host controller */
+&usb_otg_fs {
+	status = "okay";
+	dr_mode = "host";
+};
+
+/* Define the USBH controller instance that note-zephyr will use.
+ * The macro USBH_CONTROLLER_DEFINE() in the application source must
+ * reference the same devicetree node.
+ *
+ * Example application code:
+ *
+ *   #include <zephyr/usb/usbh.h>
+ *   USBH_CONTROLLER_DEFINE(usbh0, DEVICE_DT_GET(DT_NODELABEL(usb_otg_fs)));
+ */

@@ -19,3 +19,52 @@ config BLUES_NOTECARD_TRANSPORT_UART
 	select SERIAL
 	select UART_INTERRUPT_DRIVEN
 	select RING_BUFFER
+
+config BLUES_NOTECARD_TRANSPORT_USB_SERIAL
+	bool "Notecard Transport over USB Serial (CDC-ACM host)"
+	depends on !BLUES_NOTECARD_TRANSPORT_I2C
+	depends on !BLUES_NOTECARD_TRANSPORT_UART
+	select USB_HOST_STACK
+	select RING_BUFFER
+	help
+	  Enable communication with the Notecard via its USB port using the
+	  CDC-ACM protocol. This transport requires the host MCU to support
+	  USB OTG host mode. The application must define a USB host controller
+	  using USBH_CONTROLLER_DEFINE() and the Notecard must be connected via
+	  its USB cable.
+
+	  This transport provides significantly higher throughput than the
+	  9600-baud UART interface, enabling faster binary data transfers via
+	  NoteBinaryStoreTransmit().
+
+	  NOTE: Depends on Zephyr's experimental USB host stack
+	  (CONFIG_USB_HOST_STACK).
+
+if BLUES_NOTECARD_TRANSPORT_USB_SERIAL
+
+config BLUES_NOTECARD_USB_SERIAL_RX_BUF_SIZE
+	int "USB Serial RX ring buffer size (bytes)"
+	default 1024
+	help
+	  Size of the receive ring buffer for incoming USB serial data.
+	  Increase this value if data is being dropped during large transfers.
+
+config BLUES_NOTECARD_USB_SERIAL_RX_THREAD_STACK_SIZE
+	int "USB Serial RX thread stack size (bytes)"
+	default 1024
+	help
+	  Stack size for the background thread that services bulk IN transfers
+	  from the Notecard.
+
+config BLUES_NOTECARD_USB_SERIAL_RX_THREAD_PRIO
+	int "USB Serial RX thread priority"
+	default 7
+	help
+	  Thread priority for the USB serial RX thread. Lower values mean
+	  higher priority in Zephyr's scheduling model.
+
+module = BLUES_NOTECARD_USB_SERIAL
+module-str = notecard_usb_serial
+source "subsys/logging/Kconfig.template.log_config"
+
+endif # BLUES_NOTECARD_TRANSPORT_USB_SERIAL
