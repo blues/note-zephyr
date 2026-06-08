@@ -19,6 +19,10 @@ jobs:
         overlay:
           - i2c.overlay
           - uart.overlay
+        zephyr-version:
+          - v3.7.0
+          - v4.3.0
+          - v4.4.0
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -26,6 +30,10 @@ jobs:
           path: note-zephyr
           fetch-depth: 1
           submodules: recursive
+
+      - name: Set Zephyr version
+        run: |
+          sed -i 's/revision: .*/revision: ${{ matrix.zephyr-version }}/' note-zephyr/west.yml
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -38,7 +46,7 @@ jobs:
           app-path: note-zephyr
           toolchains: arm-zephyr-eabi
 
-      - name: Build ${{ matrix.example }} with ${{ matrix.overlay }}
+      - name: Build ${{ matrix.example }} with ${{ matrix.overlay }} (Zephyr ${{ matrix.zephyr-version }})
         working-directory: note-zephyr/examples/${{ matrix.example }}
         shell: bash
         run: |

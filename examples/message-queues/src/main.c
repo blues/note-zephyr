@@ -8,7 +8,7 @@
 LOG_MODULE_REGISTER(main, CONFIG_LOG_DEFAULT_LEVEL);
 
 #define BUTTON_NODE DT_ALIAS(sw0)
-#if !DT_NODE_HAS_STATUS_OKAY(BUTTON_NODE)
+#if !DT_NODE_HAS_STATUS(BUTTON_NODE, okay)
 #error "Unsupported board: sw0 devicetree alias is not defined"
 #endif
 #define BUTTON_PIN  DT_GPIO_PIN(BUTTON_NODE, gpios)
