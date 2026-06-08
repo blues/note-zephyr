@@ -43,7 +43,11 @@ int main(void)
     }
 
     // Reset the binary store
-    NoteBinaryStoreReset();
+    const char *err = NoteBinaryStoreReset();
+    if (err != NULL) {
+        LOG_ERR("Failed to reset binary store: %s", err);
+        return -1;
+    }
 
     uint8_t event_counter = 0;
     while (1) {
@@ -55,8 +59,9 @@ int main(void)
         const uint32_t notecard_binary_area_offset = 0;
 
         // Transmit data to Notecard storage
-        if (!NoteBinaryStoreTransmit((uint8_t *)blues_logo_png, blues_logo_png_len, blues_logo_png_len, notecard_binary_area_offset)) {
-            LOG_ERR("Failed to transmit binary data");
+        err = NoteBinaryStoreTransmit((uint8_t *)blues_logo_png, blues_logo_png_len, blues_logo_png_len, notecard_binary_area_offset);
+        if (err != NULL) {
+            LOG_ERR("Failed to transmit binary data: %s", err);
             NoteBinaryStoreReset();
             k_msleep(SLEEP_TIME_MS);
             continue;
@@ -65,8 +70,9 @@ int main(void)
 
         // Receive data length from Notecard storage
         uint32_t rx_data_len = 0;
-        if (!NoteBinaryStoreDecodedLength(&rx_data_len)) {
-            LOG_ERR("Failed to get decoded length");
+        err = NoteBinaryStoreDecodedLength(&rx_data_len);
+        if (err != NULL) {
+            LOG_ERR("Failed to get decoded length: %s", err);
             NoteBinaryStoreReset();
             k_msleep(SLEEP_TIME_MS);
             continue;
@@ -83,8 +89,9 @@ int main(void)
         }
 
         // Receive the actual data from Notecard storage
-        if (!NoteBinaryStoreReceive(rx_buffer, rx_buffer_len, 0, rx_data_len)) {
-            LOG_ERR("Failed to receive binary data");
+        err = NoteBinaryStoreReceive(rx_buffer, rx_buffer_len, 0, rx_data_len);
+        if (err != NULL) {
+            LOG_ERR("Failed to receive binary data: %s", err);
             k_free(rx_buffer);
             NoteBinaryStoreReset();
             k_msleep(SLEEP_TIME_MS);
@@ -97,7 +104,7 @@ int main(void)
         // Send binary data to Notehub
         req = NoteNewRequest("note.add");
         if (req) {
-            JAddStringToObject(req, "file", "cobs.qo");
+            JAddStringToObject(req, "file", "data.qo");
             JAddBoolToObject(req, "binary", true);
             JAddBoolToObject(req, "live", true);
             if (!NoteRequest(req)) {
