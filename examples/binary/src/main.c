@@ -7,11 +7,9 @@
 
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
-#include <string.h>
-#include <stdlib.h>
 
-// Include Notecard note-c library
 #include <note.h>
+#include "blues_logo.h"
 
 #ifndef PRODUCT_UID
 #define PRODUCT_UID ""
@@ -54,19 +52,16 @@ int main(void)
             return 0;
         }
 
-        // Example data to transmit
-        char data[] = "https://youtu.be/0epWToAOlFY?t=21";
-        uint32_t data_len = strlen(data);
         const uint32_t notecard_binary_area_offset = 0;
 
         // Transmit data to Notecard storage
-        if (!NoteBinaryStoreTransmit((uint8_t *)data, data_len, sizeof(data), notecard_binary_area_offset)) {
+        if (!NoteBinaryStoreTransmit((uint8_t *)blues_logo_png, blues_logo_png_len, blues_logo_png_len, notecard_binary_area_offset)) {
             LOG_ERR("Failed to transmit binary data");
             NoteBinaryStoreReset();
             k_msleep(SLEEP_TIME_MS);
             continue;
         }
-        LOG_INF("Transmitted %d bytes", data_len);
+        LOG_INF("Transmitted %d bytes", blues_logo_png_len);
 
         // Receive data length from Notecard storage
         uint32_t rx_data_len = 0;
@@ -95,7 +90,7 @@ int main(void)
             k_msleep(SLEEP_TIME_MS);
             continue;
         }
-        LOG_INF("Received %d bytes: %.*s", rx_data_len, rx_data_len, rx_buffer);
+        LOG_INF("Received %d bytes", rx_data_len);
 
         k_free(rx_buffer);
 
