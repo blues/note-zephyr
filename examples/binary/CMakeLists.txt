@@ -11,7 +11,7 @@ set(BLUES_LOGO_H ${CMAKE_CURRENT_BINARY_DIR}/blues_logo.h)
 execute_process(
     COMMAND ${PYTHON_EXECUTABLE}
             ${CMAKE_CURRENT_SOURCE_DIR}/scripts/png_to_header.py
-            ${CMAKE_CURRENT_SOURCE_DIR}/blues_logo_no_text.png
+            ${CMAKE_CURRENT_SOURCE_DIR}/blues_logo.png
             ${BLUES_LOGO_H}
             blues_logo_png
     RESULT_VARIABLE result
