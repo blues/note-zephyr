@@ -60,23 +60,41 @@ int main(void)
         const uint32_t notecard_binary_area_offset = 0;
 
         // Transmit data to Notecard storage
-        NoteBinaryStoreTransmit((uint8_t *)data, data_len, sizeof(data), notecard_binary_area_offset);
+        if (!NoteBinaryStoreTransmit((uint8_t *)data, data_len, sizeof(data), notecard_binary_area_offset)) {
+            LOG_ERR("Failed to transmit binary data");
+            NoteBinaryStoreReset();
+            k_msleep(SLEEP_TIME_MS);
+            continue;
+        }
         LOG_INF("Transmitted %d bytes", data_len);
 
         // Receive data length from Notecard storage
         uint32_t rx_data_len = 0;
-        NoteBinaryStoreDecodedLength(&rx_data_len);
+        if (!NoteBinaryStoreDecodedLength(&rx_data_len)) {
+            LOG_ERR("Failed to get decoded length");
+            NoteBinaryStoreReset();
+            k_msleep(SLEEP_TIME_MS);
+            continue;
+        }
 
         // Allocate receive buffer
         uint32_t rx_buffer_len = NoteBinaryCodecMaxEncodedLength(rx_data_len);
         uint8_t *rx_buffer = k_malloc(rx_buffer_len);
         if (!rx_buffer) {
             LOG_ERR("Failed to allocate receive buffer");
-            return -1;
+            NoteBinaryStoreReset();
+            k_msleep(SLEEP_TIME_MS);
+            continue;
         }
 
         // Receive the actual data from Notecard storage
-        NoteBinaryStoreReceive(rx_buffer, rx_buffer_len, 0, rx_data_len);
+        if (!NoteBinaryStoreReceive(rx_buffer, rx_buffer_len, 0, rx_data_len)) {
+            LOG_ERR("Failed to receive binary data");
+            k_free(rx_buffer);
+            NoteBinaryStoreReset();
+            k_msleep(SLEEP_TIME_MS);
+            continue;
+        }
         LOG_INF("Received %d bytes: %.*s", rx_data_len, rx_data_len, rx_buffer);
 
         k_free(rx_buffer);
