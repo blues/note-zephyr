@@ -7,6 +7,7 @@
 
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
+#include <string.h>
 
 #include <note.h>
 #include "blues_logo.h"
@@ -58,15 +59,26 @@ int main(void)
 
         const uint32_t notecard_binary_area_offset = 0;
 
-        // Transmit data to Notecard storage
-        err = NoteBinaryStoreTransmit((uint8_t *)blues_logo_png, blues_logo_png_len, blues_logo_png_len, notecard_binary_area_offset);
+        // NoteBinaryStoreTransmit encodes in-place, so it needs a mutable buffer
+        // large enough for the COBS-encoded output, with the raw data at the start.
+        uint32_t tx_buffer_len = NoteBinaryCodecMaxEncodedLength(blues_logo_png_len);
+        uint8_t *tx_buffer = k_malloc(tx_buffer_len);
+        if (!tx_buffer) {
+            LOG_ERR("Failed to allocate transmit buffer");
+            k_msleep(SLEEP_TIME_MS);
+            continue;
+        }
+        memcpy(tx_buffer, blues_logo_png, blues_logo_png_len);
+
+        err = NoteBinaryStoreTransmit(tx_buffer, blues_logo_png_len, tx_buffer_len, notecard_binary_area_offset);
+        k_free(tx_buffer);
         if (err != NULL) {
             LOG_ERR("Failed to transmit binary data: %s", err);
             NoteBinaryStoreReset();
             k_msleep(SLEEP_TIME_MS);
             continue;
         }
-        LOG_INF("Transmitted %d bytes", blues_logo_png_len);
+        LOG_INF("Transmitted %u bytes", blues_logo_png_len);
 
         // Receive data length from Notecard storage
         uint32_t rx_data_len = 0;
@@ -97,7 +109,17 @@ int main(void)
             k_msleep(SLEEP_TIME_MS);
             continue;
         }
-        LOG_INF("Received %d bytes", rx_data_len);
+
+        // Verify the round-trip
+        if (rx_data_len != blues_logo_png_len ||
+            memcmp(rx_buffer, blues_logo_png, blues_logo_png_len) != 0) {
+            LOG_ERR("Round-trip verification failed");
+            k_free(rx_buffer);
+            NoteBinaryStoreReset();
+            k_msleep(SLEEP_TIME_MS);
+            continue;
+        }
+        LOG_INF("Round-trip verified: %u bytes match", rx_data_len);
 
         k_free(rx_buffer);
 

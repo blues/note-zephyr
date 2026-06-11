@@ -6,7 +6,14 @@ find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 
 project(app LANGUAGES C)
 
-# Generate blues_logo.h from the PNG at configure time
+# Generate blues_logo.h from the PNG at configure time.
+# PYTHON_EXECUTABLE is set by Zephyr's CMake modules; fall back to finding
+# Python3 explicitly if this file is ever used outside a Zephyr build.
+if(NOT PYTHON_EXECUTABLE)
+    find_package(Python3 REQUIRED COMPONENTS Interpreter)
+    set(PYTHON_EXECUTABLE ${Python3_EXECUTABLE})
+endif()
+
 set(BLUES_LOGO_H ${CMAKE_CURRENT_BINARY_DIR}/blues_logo.h)
 execute_process(
     COMMAND ${PYTHON_EXECUTABLE}
@@ -17,7 +24,7 @@ execute_process(
     RESULT_VARIABLE result
 )
 if(NOT result EQUAL 0)
-    message(FATAL_ERROR "Failed to generate blues_logo.h from blues_logo_no_text.png")
+    message(FATAL_ERROR "Failed to generate blues_logo.h from blues_logo.png")
 endif()
 target_include_directories(app PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
