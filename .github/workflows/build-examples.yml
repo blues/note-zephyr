@@ -16,6 +16,10 @@ jobs:
           - blinky
           - message-queues
           - shell
+          - outboard-dfu
+          # NOTE: mcuboot-blinky is intentionally excluded. It targets the
+          # Adafruit Feather nRF52840 (not swan_r5) and builds MCUboot via a
+          # child image, so it does not fit this swan_r5 + overlay matrix.
         overlay:
           - i2c.overlay
           - uart.overlay
