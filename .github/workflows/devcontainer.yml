@@ -3,7 +3,9 @@ name: Build Devcontainer Image
 
 on:
   push:
-    branches: [main]
+    # TODO: drop alex-devcontainer-prebuilt-image before merging; it is here so
+    # the push-by-digest and manifest merge jobs get exercised pre-merge.
+    branches: [main, alex-devcontainer-prebuilt-image]
     paths:
       - .devcontainer/Dockerfile
       - .github/workflows/devcontainer.yml
@@ -19,6 +21,11 @@ on:
   schedule:
     - cron: "0 4 * * 1"
   workflow_dispatch:
+
+# Building this image is expensive; do not leave superseded runs going.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   IMAGE: ghcr.io/${{ github.repository_owner }}/note-zephyr-devcontainer
@@ -76,9 +83,9 @@ jobs:
         id: output
         run: |
           if [ "${GITHUB_EVENT_NAME}" = "pull_request" ]; then
-            echo "type=cacheonly" >> "$GITHUB_OUTPUT"
+            echo "spec=type=cacheonly" >> "$GITHUB_OUTPUT"
           else
-            echo "type=image,name=${IMAGE},push-by-digest=true,name-canonical=true,push=true" \
+            echo "spec=type=image,name=${IMAGE},push-by-digest=true,name-canonical=true,push=true" \
               >> "$GITHUB_OUTPUT"
           fi
         shell: bash
@@ -93,7 +100,7 @@ jobs:
           provenance: false
           build-args: |
             ZSDK_ARCH=${{ matrix.zsdk-arch }}
-          outputs: ${{ steps.output.outputs.type }}
+          outputs: ${{ steps.output.outputs.spec }}
 
       - name: Export digest
         if: github.event_name != 'pull_request'
