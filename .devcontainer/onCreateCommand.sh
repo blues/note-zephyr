@@ -1,17 +1,11 @@
 #!/bin/bash
+set -e
 
-unset ZEPHYR_BASE
-west init -l .
-west update
+# The image already ships a populated west workspace at /workdir (see
+# .devcontainer/Dockerfile), so this only reconciles that workspace with the
+# west.yml of the repository that is bind mounted over /workdir/note-zephyr.
+# When the manifest is unchanged this is a handful of git fetches; when it has
+# been edited it pulls in whatever actually changed.
+west update --narrow -o=--depth=1
 west zephyr-export
-pip install -r /workdir/zephyr/scripts/requirements.txt --root-user-action
-echo "alias ll='ls -lah'" >> $HOME/.bashrc
-west completion bash > $HOME/west-completion.bash
-echo 'source $HOME/west-completion.bash' >> $HOME/.bashrc
-ZSDK_ARCH=$(uname -m)
-echo "export ZSDK_ARCH=${ZSDK_ARCH}" >> $HOME/.bashrc
-ZSDK_PATH="/opt/toolchains/zephyr-sdk-${ZSDK_VERSION}"
-echo "export ZSDK_PATH=${ZSDK_PATH}" >> $HOME/.bashrc
-echo "PATH=${ZSDK_PATH}/sysroots/${ZSDK_ARCH}-pokysdk-linux/usr/bin:\$PATH" >> $HOME/.bashrc
-ln -s /opt/toolchains/zephyr-sdk-${ZSDK_VERSION}/sysroots/${ZSDK_ARCH}-pokysdk-linux/usr/bin/openocd /usr/bin/openocd
-history -c
+pip install -r /workdir/zephyr/scripts/requirements.txt --root-user-action=ignore
