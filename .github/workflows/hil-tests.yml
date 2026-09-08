@@ -110,9 +110,12 @@ jobs:
 
       # Build before reserving. Nothing here needs hardware, and a Notestation
       # held through a Zephyr build is exclusive time nobody else can use.
+      # `west twister` rather than $ZEPHYR_BASE/scripts/twister:
+      # action-zephyr-setup does not export ZEPHYR_BASE to later steps, and
+      # west resolves the workspace from the working directory anyway.
       - name: Build HIL test suite
         run: |
-          "$ZEPHYR_BASE/scripts/twister" \
+          west twister \
             -p swan_r5 \
             -T note-zephyr/tests \
             --fixture notecard_i2c \
@@ -189,7 +192,7 @@ jobs:
       # the reservation, and --no-clean stops twister renaming that outdir.
       - name: Run HIL test suite
         run: |
-          "$ZEPHYR_BASE/scripts/twister" \
+          west twister \
             -p swan_r5 \
             -T note-zephyr/tests \
             --fixture notecard_i2c \

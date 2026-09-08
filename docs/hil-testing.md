@@ -86,12 +86,13 @@ notestation-client reserve --tags mcu_swan,mcu_debugger &
 RESV_PID=$!
 RESV_DIR=$(ls -d ~/.notestation/pid-${RESV_PID}_* | head -1)
 
-# Build, then run against the hardware.
-"$ZEPHYR_BASE/scripts/twister" -p swan_r5 -T tests \
+# Build, then run against the hardware. Run these from the west topdir, not
+# from the note-zephyr directory, and adjust -T to match.
+west twister -p swan_r5 -T tests \
   --fixture notecard_i2c --build-only -O twister-out
 
 NS_HOSTNAME=$(jq -r .hostname "$RESV_DIR/reservation.json") \
-"$ZEPHYR_BASE/scripts/twister" -p swan_r5 -T tests \
+west twister -p swan_r5 -T tests \
   --fixture notecard_i2c --test-only --no-clean -O twister-out \
   --device-testing \
   --device-serial "$RESV_DIR/host_mcu_uart0" \
