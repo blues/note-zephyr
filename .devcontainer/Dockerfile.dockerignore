@@ -1,0 +1,4 @@
+# Only the manifest is needed to build the image; excluding the rest keeps the
+# build context small (the note-c submodule and any local build output).
+*
+!west.yml

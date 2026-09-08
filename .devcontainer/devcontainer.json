@@ -1,6 +1,11 @@
 {
-	"name": "Zephyr Development Environment Dockerfile",
-	"image": "zephyrprojectrtos/zephyr-build:v0.26-branch",
+	"name": "Zephyr Development Environment",
+
+	// Pre-built from .devcontainer/Dockerfile by .github/workflows/devcontainer.yml.
+	// It already contains the west workspace, so startup is a pull rather than a
+	// full `west update`. To build it yourself instead, replace "image" with:
+	//   "build": { "dockerfile": "Dockerfile", "context": ".." }
+	"image": "ghcr.io/blues/note-zephyr-devcontainer:latest",
 
 	"customizations": {
 		"vscode": {
@@ -30,5 +35,5 @@
 	"workspaceMount": "source=${localWorkspaceFolder},target=/workdir/note-zephyr,type=bind,consistency=cached",
 	"workspaceFolder": "/workdir/note-zephyr",
 
-	"onCreateCommand": "bash -i ${containerWorkspaceFolder}/.devcontainer/onCreateCommand.sh"
+	"onCreateCommand": "bash ${containerWorkspaceFolder}/.devcontainer/onCreateCommand.sh"
 }
