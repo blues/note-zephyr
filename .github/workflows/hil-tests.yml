@@ -1,0 +1,221 @@
+---
+name: HIL Tests
+
+# Hardware-in-the-loop tests. These reserve a Notestation -- a Raspberry Pi
+# with a real Swan and Notecard attached, reachable over the Blues Tailnet --
+# flash it, and assert on what the board says over its console.
+#
+# Deliberately not wired to `pull_request` yet: the job needs Tailscale and
+# Notestation secrets plus exclusive access to physical hardware, none of which
+# can be validated from a branch. Turn the PR trigger on once a dispatch run is
+# green. See docs/hil-testing.md.
+on:
+  workflow_dispatch:
+    inputs:
+      notestation_tags:
+        description: >
+          Space-separated tags used to pick a Notestation. Needs mcu_swan for
+          the board and mcu_debugger for the SWD probe that flashing goes
+          through.
+        type: string
+        default: mcu_swan mcu_debugger
+      notestation:
+        description: >
+          Specific Notestation hostname, e.g. barcelona-notestation-1. Takes
+          precedence over notestation_tags when set.
+        type: string
+        default: ''
+      console_env:
+        description: >
+          Which reserved device carries the Zephyr console. swan_r5 puts the
+          console on lpuart1, so this is a host MCU UART rather than the USB
+          device.
+        type: choice
+        options:
+          - NS_HOST_MCU_UART0
+          - NS_HOST_MCU_UART1
+          - NS_HOST_MCU_USB
+        default: NS_HOST_MCU_UART0
+      zephyr_version:
+        description: 'Zephyr revision to build against.'
+        type: string
+        default: v4.4.0
+  schedule:
+    # Nightly, after the note-c HIL job so the two do not fight over hardware.
+    - cron: '0 9 * * *'
+
+permissions:
+  checks: write
+  contents: read
+
+# A Notestation is an exclusive resource. A new run on the same ref cancels the
+# in-flight one rather than queueing behind its own reservation.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NOTESTATION_CLIENT_VERSION: notestation-v3.5.1
+  ZEPHYR_VERSION: ${{ inputs.zephyr_version || 'v4.4.0' }}
+  CONSOLE_ENV: ${{ inputs.console_env || 'NS_HOST_MCU_UART0' }}
+
+jobs:
+  hil:
+    # Fork PRs cannot see the Tailscale or Notestation secrets, so skip rather
+    # than fail once the pull_request trigger is enabled.
+    if: >-
+      github.event.repository.fork != true &&
+      (github.event_name != 'pull_request' ||
+       github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-latest
+    # A healthy run builds, reserves, flashes and tests well inside this. The
+    # cap stops a hung serial read from holding the hardware for hours.
+    timeout-minutes: 45
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          path: note-zephyr
+          fetch-depth: 1
+          submodules: recursive
+
+      - name: Pin Zephyr revision
+        run: |
+          sed -i "s/revision: .*/revision: ${ZEPHYR_VERSION}/" note-zephyr/west.yml
+          cat note-zephyr/west.yml
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Setup Zephyr project
+        uses: zephyrproject-rtos/action-zephyr-setup@v1
+        with:
+          app-path: note-zephyr
+          toolchains: arm-zephyr-eabi
+
+      # twister needs these for --device-testing specifically; the Zephyr
+      # requirements installed above do not always pull them in.
+      - name: Install twister device-testing dependencies
+        run: pip install tabulate pyserial
+
+      # Build before reserving. Nothing here needs hardware, and a Notestation
+      # held through a Zephyr build is exclusive time nobody else can use.
+      - name: Build HIL test suite
+        run: |
+          "$ZEPHYR_BASE/scripts/twister" \
+            -p swan_r5 \
+            -T note-zephyr/tests \
+            --fixture notecard_i2c \
+            --build-only \
+            --clobber-output \
+            -O twister-out \
+            --inline-logs
+
+      - name: Build blinky smoke-test image
+        working-directory: note-zephyr/examples/blinky
+        run: |
+          west build -p -b swan_r5 . \
+            -d "$GITHUB_WORKSPACE/blinky-build" \
+            -- \
+            -DDTC_OVERLAY_FILE=../overlays/i2c.overlay \
+            -DEXTRA_CONF_FILE="$GITHUB_WORKSPACE/note-zephyr/scripts/hil/smoke.conf"
+
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v3
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_CLIENT_SECRET }}
+          tags: tag:ci
+          version: latest
+          use-cache: 'true'
+
+      # Exports NS_* environment variables and releases the reservation in a
+      # post step, even if the job fails or is cancelled.
+      - name: Reserve Notestation
+        uses: blues/notestation-actions/reserve_notestation@v1.0.2
+        with:
+          notestation: ${{ inputs.notestation }}
+          tags: ${{ inputs.notestation == '' && (inputs.notestation_tags || 'mcu_swan mcu_debugger') || '' }}
+          timeout: '600'
+          version: ${{ env.NOTESTATION_CLIENT_VERSION }}
+          token: ${{ secrets.NOTESTATION_RELEASE_DOWNLOAD_TOKEN }}
+
+      # Which NS_HOST_MCU_* device the Swan's lpuart1 lands on is Notestation
+      # wiring, not something either repo records. Resolve it here and fail
+      # immediately -- naming what *was* available -- rather than letting
+      # twister hang on a device that does not exist.
+      - name: Resolve console device
+        run: |
+          CONSOLE_PORT="${!CONSOLE_ENV}"
+          if [ -z "$CONSOLE_PORT" ]; then
+            echo "::error::${CONSOLE_ENV} is empty on ${NS_HOSTNAME}."
+            echo "Devices this reservation does expose:"
+            for var in NS_HOST_MCU_USB NS_HOST_MCU_UART0 NS_HOST_MCU_UART1 \
+                       NS_NOTECARD_USB NS_NOTECARD_AUX_UART NS_NOTECARD_LP_UART; do
+              printf '  %s=%s\n' "$var" "${!var}"
+            done
+            echo "Re-run with console_env set to whichever of those is wired" \
+                 "to the Swan's lpuart1."
+            exit 1
+          fi
+          echo "Using $CONSOLE_ENV -> $CONSOLE_PORT"
+          echo "CONSOLE_PORT=$CONSOLE_PORT" >> "$GITHUB_ENV"
+
+      # Stage one: a known-good example. If this fails, the problem is the
+      # reserve/flash/console chain rather than anything in the test suite.
+      - name: Smoke test blinky on hardware
+        run: |
+          notestation-client flash \
+            --notestation "$NS_HOSTNAME" \
+            --file "$GITHUB_WORKSPACE/blinky-build/zephyr/zephyr.elf"
+
+          python note-zephyr/scripts/hil/console_expect.py \
+            --port "$CONSOLE_PORT" \
+            --expect "Entering main loop" \
+            --timeout 90 \
+            --log "$GITHUB_WORKSPACE/blinky-console.log"
+
+      # Stage two: the ztest suite. --test-only reuses the images built before
+      # the reservation, and --no-clean stops twister renaming that outdir.
+      - name: Run HIL test suite
+        run: |
+          "$ZEPHYR_BASE/scripts/twister" \
+            -p swan_r5 \
+            -T note-zephyr/tests \
+            --fixture notecard_i2c \
+            --test-only \
+            --no-clean \
+            -O twister-out \
+            --device-testing \
+            --device-serial "$CONSOLE_PORT" \
+            --device-serial-baud 115200 \
+            --flash-command "$GITHUB_WORKSPACE/note-zephyr/scripts/hil/notestation_flash.py" \
+            --inline-logs
+
+      - name: Publish test report
+        uses: mikepenz/action-junit-report@v3
+        if: success() || failure()
+        with:
+          report_paths: twister-out/twister.xml
+          check_name: Notecard HIL Tests
+          require_tests: true
+
+      - name: Upload logs
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: hil-logs
+          path: |
+            blinky-console.log
+            twister-out/twister.xml
+            twister-out/twister.json
+            twister-out/twister.log
+            twister-out/**/handler.log
+            twister-out/**/build.log
+          if-no-files-found: warn
+          retention-days: 14

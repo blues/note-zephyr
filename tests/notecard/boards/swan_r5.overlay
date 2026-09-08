@@ -1,0 +1,18 @@
+/*
+ * Copyright (c) 2026 Blues Inc.
+ * SPDX-License-Identifier: MIT
+ *
+ * Notecard on the Feather I2C bus, matching examples/overlays/i2c.overlay.
+ * This is the wiring a Notecarrier-F gives you with a Swan seated on it, which
+ * is what the Notestations are built around.
+ */
+
+&feather_i2c {
+	status = "okay";
+
+	notecard@17 {
+		compatible = "blues,notecard";
+		reg = <0x17>;
+		status = "okay";
+	};
+};

@@ -1,0 +1,19 @@
+tests:
+  blues.notecard.hil:
+    # Requires a Swan with a Notecard on the Feather I2C bus, i.e. a Swan
+    # seated on a Notecarrier-F. See docs/hil-testing.md.
+    tags:
+      - notecard
+      - hil
+    harness: ztest
+    harness_config:
+      # These cases only mean anything against a real Notecard, so they are
+      # gated behind a fixture. Twister still *builds* them without it -- the
+      # fixture gates execution, so `--device-testing` will not run them
+      # unless `--fixture notecard_i2c` says the hardware is present.
+      fixture: notecard_i2c
+    platform_allow:
+      - swan_r5
+    # A full pass is a handful of Notecard transactions. The cap stops a hung
+    # transport from sitting here for minutes.
+    timeout: 120
