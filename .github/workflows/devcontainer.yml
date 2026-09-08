@@ -3,9 +3,7 @@ name: Build Devcontainer Image
 
 on:
   push:
-    # TODO: drop alex-devcontainer-prebuilt-image before merging; it is here so
-    # the push-by-digest and manifest merge jobs get exercised pre-merge.
-    branches: [main, alex-devcontainer-prebuilt-image]
+    branches: [main]
     paths:
       - .devcontainer/Dockerfile
       - .github/workflows/devcontainer.yml
