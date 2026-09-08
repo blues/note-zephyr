@@ -18,11 +18,13 @@ WORKDIR /workdir
 COPY west.yml /workdir/note-zephyr/west.yml
 
 # ZEPHYR_BASE is set by the base image, but /workdir/zephyr does not exist yet.
+# zephyr-export is a Zephyr extension command, so Zephyr's Python requirements
+# have to be installed before it can run.
 RUN unset ZEPHYR_BASE \
     && west init -l /workdir/note-zephyr \
     && west update --narrow -o=--depth=1 \
-    && west zephyr-export \
-    && pip install -r /workdir/zephyr/scripts/requirements.txt --root-user-action=ignore
+    && pip install -r /workdir/zephyr/scripts/requirements.txt --root-user-action=ignore \
+    && west zephyr-export
 
 # Toolchain environment, exported at the image level so that non-interactive
 # shells (CMake Tools, cortex-debug, VS Code tasks) inherit it too, rather than

@@ -7,5 +7,7 @@ set -e
 # When the manifest is unchanged this is a handful of git fetches; when it has
 # been edited it pulls in whatever actually changed.
 west update --narrow -o=--depth=1
-west zephyr-export
+# zephyr-export is a Zephyr extension command, so install Zephyr's Python
+# requirements first in case the manifest moved to a version that needs more.
 pip install -r /workdir/zephyr/scripts/requirements.txt --root-user-action=ignore
+west zephyr-export
