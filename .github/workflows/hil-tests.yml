@@ -60,7 +60,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  NOTESTATION_CLIENT_VERSION: notestation-v3.5.1
+  NOTESTATION_CLIENT_VERSION: notestation-v3.6.0
   ZEPHYR_VERSION: ${{ inputs.zephyr_version || 'v4.4.0' }}
   CONSOLE_ENV: ${{ inputs.console_env || 'NS_HOST_MCU_UART0' }}
 
@@ -133,14 +133,36 @@ jobs:
             -DDTC_OVERLAY_FILE=../overlays/i2c.overlay \
             -DEXTRA_CONF_FILE="$GITHUB_WORKSPACE/note-zephyr/scripts/hil/smoke.conf"
 
+      # TAILSCALE_OAUTH_* are org-level secrets, so nothing has to be copied
+      # into this repo. Note these are *not* note-c's TS_OAUTH_* names -- those
+      # are repo-local to note-c. Version pinned to match blues/hub rather than
+      # tracking `latest`.
       - name: Connect to Tailscale
-        uses: tailscale/github-action@v3
+        uses: tailscale/github-action@v4
         with:
-          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
-          oauth-secret: ${{ secrets.TS_OAUTH_CLIENT_SECRET }}
+          oauth-client-id: ${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TAILSCALE_OAUTH_CLIENT_SECRET }}
           tags: tag:ci
-          version: latest
-          use-cache: 'true'
+          version: 1.96.4
+
+      # notestation-client lives in the private blues/notestation repo, and the
+      # current pattern for reaching it is a short-lived GitHub App token scoped
+      # to that one repo rather than a long-lived PAT. The app id is a variable
+      # (not a secret) because it is not sensitive.
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ vars.BLUES_NOTE_ZEPHYR_AUTOMATION_APP_ID }}
+          private-key: ${{ secrets.BLUES_NOTE_ZEPHYR_AUTOMATION_PRIVATE_KEY }}
+          owner: blues
+          repositories: notestation
+
+      - name: Install notestation-client
+        uses: blues/notestation-actions/install_notestation_client@v1.0.2
+        with:
+          version: ${{ env.NOTESTATION_CLIENT_VERSION }}
+          token: ${{ steps.app-token.outputs.token }}
 
       # Exports NS_* environment variables and releases the reservation in a
       # post step, even if the job fails or is cancelled.
@@ -150,8 +172,7 @@ jobs:
           notestation: ${{ inputs.notestation }}
           tags: ${{ inputs.notestation == '' && (inputs.notestation_tags || 'mcu_swan mcu_debugger') || '' }}
           timeout: '600'
-          version: ${{ env.NOTESTATION_CLIENT_VERSION }}
-          token: ${{ secrets.NOTESTATION_RELEASE_DOWNLOAD_TOKEN }}
+          token: ${{ steps.app-token.outputs.token }}
 
       # Which NS_HOST_MCU_* device the Swan's lpuart1 lands on is Notestation
       # wiring, not something either repo records. Resolve it here and fail

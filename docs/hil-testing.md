@@ -139,18 +139,34 @@ green, and note what it commits to:
   than failing, so this is handled — but it does mean HIL results are absent on
   fork contributions.
 
-## Required secrets
+## Credentials
 
-The workflow needs three secrets that **`blues/note-zephyr` does not currently
-have at repository level**:
+Two separate things, following the pattern in
+[`blues/hub`'s notestation-e2e workflow][hub-e2e] rather than the older
+approach in `blues/note-c`:
 
-| Secret | Used for |
-|---|---|
-| `TS_OAUTH_CLIENT_ID` | Joining the Blues Tailnet |
-| `TS_OAUTH_CLIENT_SECRET` | Joining the Blues Tailnet |
-| `NOTESTATION_RELEASE_DOWNLOAD_TOKEN` | Downloading `notestation-client` from `blues/notestation` releases |
+[hub-e2e]: https://github.com/blues/hub/blob/master/.github/workflows/notestation-e2e.yml
 
-`blues/note-c` holds all three as repository secrets. The notestation-actions
-README says the Tailscale pair is set org-wide, which would make them available
-here automatically — if that is the case, nothing needs doing. Confirm before
-the first run; a missing secret shows up as a Tailscale step failure.
+| Name | Kind | Used for |
+|---|---|---|
+| `TAILSCALE_OAUTH_CLIENT_ID` | org secret | Joining the Blues Tailnet |
+| `TAILSCALE_OAUTH_CLIENT_SECRET` | org secret | Joining the Blues Tailnet |
+| `BLUES_NOTE_ZEPHYR_AUTOMATION_APP_ID` | repo **variable** | GitHub App that mints the `notestation` download token |
+| `BLUES_NOTE_ZEPHYR_AUTOMATION_PRIVATE_KEY` | repo secret | Private key for that app |
+
+The Tailscale pair is org-level, so nothing needs copying into this repo. Note
+these are **not** `note-c`'s `TS_OAUTH_CLIENT_ID`/`TS_OAUTH_CLIENT_SECRET` —
+those are repo-local to note-c, and using those names here yields an empty
+value and an `OAuth identity empty` failure.
+
+`notestation-client` ships from the private `blues/notestation` repo. Rather
+than a long-lived PAT, the workflow mints a short-lived token with
+`actions/create-github-app-token`, scoped to `owner: blues` and
+`repositories: notestation`. The app id is a *variable* rather than a secret
+because it is not sensitive.
+
+For that to work, the note-zephyr automation GitHub App has to be **installed
+on `blues/notestation` with contents read access**. If it is not, the
+`Generate GitHub App token` step fails immediately — that is the signal to ask
+whoever administers the Blues GitHub Apps to grant it, the same grant
+`BLUES_HUB_AUTOMATION_APP_ID` already has.
