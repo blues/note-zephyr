@@ -201,9 +201,10 @@ jobs:
       # reserve/flash/console chain rather than anything in the test suite.
       - name: Smoke test blinky on hardware
         run: |
-          notestation-client flash \
-            --notestation "$NS_HOSTNAME" \
-            --file "$GITHUB_WORKSPACE/blinky-build/zephyr/zephyr.elf"
+          # Same flash path twister uses, so a flashing problem shows up here
+          # rather than being discovered again one stage later.
+          python note-zephyr/scripts/hil/notestation_flash.py \
+            --build-dir "$GITHUB_WORKSPACE/blinky-build"
 
           python note-zephyr/scripts/hil/console_expect.py \
             --port "$CONSOLE_PORT" \

@@ -140,12 +140,28 @@ Twister cannot flash a board it cannot see, and the Swan is on the far end of a
 Tailnet tunnel. Two hooks bridge that:
 
 - **`scripts/hil/notestation_flash.py`** is passed to twister's
-  `--flash-command`. Twister calls it with `--build-dir`, and it hands
-  `<build-dir>/zephyr/zephyr.elf` to `notestation-client flash`. It must be the
-  `.elf`: `notestation-client` detects the target from the file's signature
-  bytes, and host MCU flashing only accepts `.elf`/`.out`. OpenOCD ends its
-  flash script with `reset run`, so the board is executing by the time twister
-  starts reading.
+  `--flash-command`. Twister calls it with `--build-dir`, and it flashes
+  `<build-dir>/zephyr/zephyr.elf` over GDB to the OpenOCD instance the
+  Notestation runs for the reservation, on the `gdb_port` it finds in
+  `reservation.json`.
+
+  It deliberately does **not** use `notestation-client flash`. That command
+  syncs the ELF to the Notestation over SSH first:
+
+  ```
+  ssh to barcelona-notestation-1: handshake failed: unable to authenticate
+  ```
+
+  which needs an SSH credential a CI runner has no business holding. The GDB
+  port needs nothing beyond the Tailnet connection the reservation already
+  required. `note-c`'s HIL workflow flashes the same way, for the same reason.
+
+  GDB comes from the Zephyr SDK (`arm-zephyr-eabi-gdb`) — a plain `gdb` cannot
+  flash an ARM target. `action-zephyr-setup` neither puts the toolchain on
+  `PATH` nor exports `ZEPHYR_SDK_INSTALL_DIR`, so the script also searches the
+  usual SDK install roots. The script requires GDB to report `Transfer rate`
+  before calling the flash a success, because GDB can exit 0 having written
+  nothing.
 - **`--device-serial`** points at the reservation's PTY symlink, with
   `--flash-before` so twister is not holding it open across the flash. See
   [The console device](#the-console-device) for why that combination is
