@@ -183,6 +183,14 @@ jobs:
           version: ${{ env.NOTESTATION_CLIENT_VERSION }}
           token: ${{ steps.app-token.outputs.token }}
 
+      # Which stations carry which hardware is not recorded in any repo, and
+      # tag-based reservation picks the first match -- which is no help when
+      # that match is a station whose host MCU is currently presenting no USB
+      # device. Log the inventory so a specific host can be chosen.
+      - name: List Notestations
+        continue-on-error: true
+        run: notestation-client list --all --json
+
       # Exports NS_* environment variables and releases the reservation in a
       # post step, even if the job fails or is cancelled.
       - name: Reserve Notestation
