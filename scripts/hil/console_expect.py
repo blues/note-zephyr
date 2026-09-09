@@ -14,6 +14,7 @@ the whole timeout.
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 import time
 from pathlib import Path
@@ -50,6 +51,14 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     )
     parser.add_argument("--timeout", type=float, default=90.0)
     parser.add_argument(
+        "--wait-for-port",
+        type=float,
+        default=0.0,
+        help="Seconds to wait for the port to appear before reading. The "
+        "console is USB CDC ACM, so it is absent while the board is flashed "
+        "and returns only once USB has re-enumerated.",
+    )
+    parser.add_argument(
         "--log",
         type=Path,
         default=None,
@@ -72,6 +81,17 @@ def main(argv: list[str] | None = None) -> int:
         if log_handle:
             log_handle.write(line + "\n")
             log_handle.flush()
+
+    if args.wait_for_port > 0:
+        appear_deadline = time.monotonic() + args.wait_for_port
+        while time.monotonic() < appear_deadline and not os.path.exists(args.port):
+            time.sleep(0.5)
+        if not os.path.exists(args.port):
+            print(
+                f"error: {args.port} did not appear within {args.wait_for_port}s",
+                file=sys.stderr,
+            )
+            return 1
 
     try:
         # A short read timeout keeps the deadline check responsive on a quiet

@@ -21,6 +21,7 @@ import os
 import shutil
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 
@@ -42,7 +43,56 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="Notestation hostname. Defaults to NS_HOSTNAME, exported by the "
         "reserve_notestation action.",
     )
+    parser.add_argument(
+        "--wait-for-port",
+        default=os.environ.get("CONSOLE_PORT", ""),
+        help="Console device to wait for after flashing. Defaults to "
+        "CONSOLE_PORT. Set empty to skip waiting.",
+    )
+    parser.add_argument(
+        "--wait-timeout",
+        type=float,
+        default=60.0,
+        help="Seconds to wait for the console device to come back.",
+    )
     return parser.parse_args(argv)
+
+
+def wait_for_port(path: str, timeout: float) -> bool:
+    """Block until `path` exists and can be opened.
+
+    The console is USB CDC ACM, so flashing takes the device down and the
+    reservation's symlink only returns once the Notecard's host MCU has
+    re-enumerated. Twister opens the port with a single, un-retried
+    ``serial.Serial()`` immediately after this script exits, so if we return
+    early it fails outright with "Serial Device Error". Existence alone is not
+    enough -- the symlink can be back before the endpoint accepts an open.
+    """
+    deadline = time.monotonic() + timeout
+    last_error: OSError | None = None
+
+    while time.monotonic() < deadline:
+        if os.path.exists(path):
+            try:
+                fd = os.open(path, os.O_RDWR | os.O_NOCTTY)
+            except OSError as exc:
+                last_error = exc
+            else:
+                os.close(fd)
+                return True
+        time.sleep(0.5)
+
+    if last_error is not None:
+        print(
+            f"error: {path} reappeared but could not be opened: {last_error}",
+            file=sys.stderr,
+        )
+    else:
+        print(
+            f"error: {path} did not reappear within {timeout}s of flashing",
+            file=sys.stderr,
+        )
+    return False
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -89,8 +139,15 @@ def main(argv: list[str] | None = None) -> int:
             f"error: notestation-client flash exited {result.returncode}",
             file=sys.stderr,
         )
+        return result.returncode
 
-    return result.returncode
+    if args.wait_for_port:
+        print(f"Waiting for {args.wait_for_port} to come back", flush=True)
+        if not wait_for_port(args.wait_for_port, args.wait_timeout):
+            return 1
+        print("Console device is back", flush=True)
+
+    return 0
 
 
 if __name__ == "__main__":

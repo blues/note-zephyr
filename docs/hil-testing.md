@@ -54,27 +54,52 @@ Inputs:
 |---|---|---|
 | `notestation_tags` | `mcu_swan mcu_debugger` | Both tags matter. `mcu_swan` says a Swan is present; `mcu_debugger` says there is an SWD probe on it, which is what flashing goes through. |
 | `notestation` | *(empty)* | A specific hostname, e.g. `barcelona-notestation-1`. Overrides the tags. |
-| `console_env` | `NS_HOST_MCU_UART0` | Which reserved device carries the Zephyr console — see below. |
+| `console_env` | `NS_HOST_MCU_USB` | Which reserved device carries the Zephyr console — see below. |
 | `zephyr_version` | `v4.4.0` | Pinned rather than tracking `main`, so a HIL failure means a note-zephyr regression rather than Zephyr drift. |
 
 ## The console device
 
 `swan_r5.dts` puts both `zephyr,console` and `zephyr,shell-uart` on `lpuart1`,
-which is a hardware UART on the Feather header — **not** the Swan's native USB.
-Which `NS_HOST_MCU_UART*` that lands on depends on how the Notestation is
-wired, and neither the notestation repo nor this one records it, hence the
-`console_env` input.
+a hardware UART on the Feather header. That would be the nicer console to use —
+it survives a reset and never re-enumerates — but **the Notestations do not wire
+it**. `barcelona-notestation-1` exposes only `host_mcu_usb` and `notecard_usb`;
+both `NS_HOST_MCU_UART0` and `NS_HOST_MCU_UART1` are empty. `note-c`'s HIL
+workflow uses `host_mcu_usb` on the same station for the same reason.
 
-A hardware UART is the right choice here regardless of which one it is: it
-survives a reset and never re-enumerates. The Swan's native USB re-enumerates
-after every flash, and `note-c`'s HIL workflow carries three paragraphs about
-the symlink flicker that caused.
+So both HIL builds apply Zephyr's [`cdc-acm-console`][snippet] snippet, moving
+the console onto the Swan's native USB — `required_snippets` in
+`testcase.yaml` for the suite, `-S cdc-acm-console` for the blinky build. The
+snippet brings in the USB device stack and initialises CDC ACM at boot, so no
+application code changes.
 
-If the chosen device is empty on the reserved Notestation, the workflow fails
-immediately and prints every `NS_*` device the reservation *did* expose. Re-run
-with `console_env` set to whichever one is wired to `lpuart1`. That is much
-better than the alternative: a run that reserves, flashes, and then hangs on a
+[snippet]: https://docs.zephyrproject.org/latest/build/snippets/index.html
+
+That buys a working console at the cost of a soft-USB device, which needs three
+things to be true:
+
+- **`--flash-before`.** Twister's default is to open the serial port *before*
+  flashing, which is right for a hardware UART but wrong here: flashing tears
+  the USB endpoint down underneath an open handle. This is the flicker class
+  `note-c`'s workflow documents at length.
+- **The flash script waits for the device to return.** Twister opens the port
+  with a single un-retried `serial.Serial()` straight after the flash command
+  exits, so `notestation_flash.py` polls until the reservation's symlink is back
+  *and* can be opened. Existence alone is not enough — the symlink can reappear
+  before the endpoint accepts an open.
+- **`CONFIG_BOOT_DELAY=3000`.** Otherwise the board can emit the ztest banner
+  into a port nobody is reading yet, and twister waits for output that has
+  already gone.
+
+If the selected device is empty on the reserved Notestation, the workflow fails
+immediately and prints every `NS_*` device the reservation *did* expose, so a
+station wired differently is a one-input fix rather than a mystery. That is much
+better than the alternative: a run that reserves, flashes, then hangs on a
 silent port until the job timeout.
+
+If a Notestation ever does wire `lpuart1` through to the Pi, that is the better
+console: set `console_env` to the matching `NS_HOST_MCU_UART*`, drop
+`--flash-before` and the snippet, and the soft-USB machinery above becomes
+unnecessary.
 
 ## Running the suite locally
 
@@ -91,12 +116,15 @@ RESV_DIR=$(ls -d ~/.notestation/pid-${RESV_PID}_* | head -1)
 west twister -p swan_r5 -T tests \
   --fixture notecard_i2c --build-only -O twister-out
 
-NS_HOSTNAME=$(jq -r .hostname "$RESV_DIR/reservation.json") \
+export NS_HOSTNAME=$(jq -r .hostname "$RESV_DIR/reservation.json")
+export CONSOLE_PORT="$RESV_DIR/host_mcu_usb"
+
 west twister -p swan_r5 -T tests \
   --fixture notecard_i2c --test-only --no-clean -O twister-out \
   --device-testing \
-  --device-serial "$RESV_DIR/host_mcu_uart0" \
+  --device-serial "$CONSOLE_PORT" \
   --device-serial-baud 115200 \
+  --flash-before \
   --flash-command "$PWD/scripts/hil/notestation_flash.py"
 
 kill $RESV_PID
@@ -118,9 +146,10 @@ Tailnet tunnel. Two hooks bridge that:
   bytes, and host MCU flashing only accepts `.elf`/`.out`. OpenOCD ends its
   flash script with `reset run`, so the board is executing by the time twister
   starts reading.
-- **`--device-serial`** points at the reservation's PTY symlink. Twister opens
-  it *before* flashing (its `--flash-before` default is off), so the ztest
-  banner is captured even though the board reboots as part of flashing.
+- **`--device-serial`** points at the reservation's PTY symlink, with
+  `--flash-before` so twister is not holding it open across the flash. See
+  [The console device](#the-console-device) for why that combination is
+  required.
 
 `scripts/hil/console_expect.py` handles the smoke test, which is an ordinary
 application rather than a test binary and so has no twister harness. It exits

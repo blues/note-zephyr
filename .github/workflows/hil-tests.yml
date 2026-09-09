@@ -32,15 +32,16 @@ on:
         default: ''
       console_env:
         description: >
-          Which reserved device carries the Zephyr console. swan_r5 puts the
-          console on lpuart1, so this is a host MCU UART rather than the USB
-          device.
+          Which reserved device carries the Zephyr console. The builds use the
+          cdc-acm-console snippet to put it on the Swan's native USB, because
+          that is what the Notestations wire up; the UART options are here for
+          a station that exposes lpuart1 instead.
         type: choice
         options:
+          - NS_HOST_MCU_USB
           - NS_HOST_MCU_UART0
           - NS_HOST_MCU_UART1
-          - NS_HOST_MCU_USB
-        default: NS_HOST_MCU_UART0
+        default: NS_HOST_MCU_USB
       zephyr_version:
         description: 'Zephyr revision to build against.'
         type: string
@@ -62,7 +63,7 @@ concurrency:
 env:
   NOTESTATION_CLIENT_VERSION: notestation-v3.6.0
   ZEPHYR_VERSION: ${{ inputs.zephyr_version || 'v4.4.0' }}
-  CONSOLE_ENV: ${{ inputs.console_env || 'NS_HOST_MCU_UART0' }}
+  CONSOLE_ENV: ${{ inputs.console_env || 'NS_HOST_MCU_USB' }}
 
 jobs:
   hil:
@@ -129,6 +130,7 @@ jobs:
         run: |
           west build -p -b swan_r5 . \
             -d "$GITHUB_WORKSPACE/blinky-build" \
+            -S cdc-acm-console \
             -- \
             -DDTC_OVERLAY_FILE=../overlays/i2c.overlay \
             -DEXTRA_CONF_FILE="$GITHUB_WORKSPACE/note-zephyr/scripts/hil/smoke.conf"
@@ -207,10 +209,16 @@ jobs:
             --port "$CONSOLE_PORT" \
             --expect "Entering main loop" \
             --timeout 90 \
+            --wait-for-port 60 \
             --log "$GITHUB_WORKSPACE/blinky-console.log"
 
       # Stage two: the ztest suite. --test-only reuses the images built before
       # the reservation, and --no-clean stops twister renaming that outdir.
+      #
+      # --flash-before is required because the console is USB CDC ACM: the port
+      # is torn down while the board is flashed, so twister must not be holding
+      # it open across the flash. The flash script does not return until the
+      # device is back, since twister's serial open has no retry.
       - name: Run HIL test suite
         run: |
           west twister \
@@ -223,6 +231,7 @@ jobs:
             --device-testing \
             --device-serial "$CONSOLE_PORT" \
             --device-serial-baud 115200 \
+            --flash-before \
             --flash-command "$GITHUB_WORKSPACE/note-zephyr/scripts/hil/notestation_flash.py" \
             --inline-logs
 
