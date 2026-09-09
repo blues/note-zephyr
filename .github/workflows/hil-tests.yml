@@ -109,6 +109,21 @@ jobs:
       - name: Install twister device-testing dependencies
         run: pip install tabulate pyserial
 
+      # Flashing goes over GDB, and only the SDK's arm-zephyr-eabi-gdb can talk
+      # to an ARM target. action-zephyr-setup extracts the SDK here but leaves
+      # its bin off PATH. Fail now, loudly, rather than at flash time.
+      - name: Put Zephyr SDK toolchain on PATH
+        run: |
+          SDK_BIN="$GITHUB_WORKSPACE/zephyr-sdk/arm-zephyr-eabi/bin"
+          if [ ! -x "$SDK_BIN/arm-zephyr-eabi-gdb" ]; then
+            echo "::error::no arm-zephyr-eabi-gdb at $SDK_BIN"
+            echo "Zephyr SDK layout:"
+            find "$GITHUB_WORKSPACE/zephyr-sdk" -maxdepth 2 -name "arm-zephyr-eabi*" 2>/dev/null || true
+            exit 1
+          fi
+          echo "$SDK_BIN" >> "$GITHUB_PATH"
+          "$SDK_BIN/arm-zephyr-eabi-gdb" --version | head -1
+
       # Build before reserving. Nothing here needs hardware, and a Notestation
       # held through a Zephyr build is exclusive time nobody else can use.
       # `west twister` rather than $ZEPHYR_BASE/scripts/twister:

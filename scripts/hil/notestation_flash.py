@@ -43,14 +43,31 @@ def find_gdb() -> str | None:
     if found:
         return found
 
+    # action-zephyr-setup neither puts the toolchain on PATH nor exports
+    # ZEPHYR_SDK_INSTALL_DIR, so look where SDKs actually land.
     roots: list[Path] = []
+
     sdk = os.environ.get("ZEPHYR_SDK_INSTALL_DIR")
     if sdk:
         roots.append(Path(sdk))
 
-    # Wherever the SDK actually landed. action-zephyr-setup does not put the
-    # toolchain bin on PATH or export ZEPHYR_SDK_INSTALL_DIR, so these are the
-    # usual install roots.
+    # action-zephyr-setup extracts to <base-path>/zephyr-sdk, and base-path
+    # defaults to the workspace root.
+    workspace = os.environ.get("GITHUB_WORKSPACE")
+    if workspace:
+        roots.append(Path(workspace) / "zephyr-sdk")
+    roots.append(Path.cwd() / "zephyr-sdk")
+
+    # A locally installed SDK registers itself as a CMake package; the file
+    # holds the SDK's cmake/ directory, whose parent is the SDK root.
+    registry = Path.home() / ".cmake" / "packages" / "Zephyr-sdk"
+    if registry.is_dir():
+        for entry in sorted(registry.iterdir(), reverse=True):
+            try:
+                roots.append(Path(entry.read_text(encoding="utf-8").strip()).parent)
+            except OSError:
+                continue
+
     for pattern in ("zephyr-sdk-*", ".local/opt/zephyr-sdk-*"):
         roots.extend(sorted(Path.home().glob(pattern), reverse=True))
     for parent in ("/opt/toolchains", "/opt"):
@@ -61,6 +78,11 @@ def find_gdb() -> str | None:
         if candidate.is_file():
             return str(candidate)
 
+    print(
+        "no arm-zephyr-eabi-gdb found under: "
+        + ", ".join(str(r) for r in roots),
+        file=sys.stderr,
+    )
     return None
 
 
