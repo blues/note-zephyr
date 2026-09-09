@@ -114,15 +114,17 @@ jobs:
       # its bin off PATH. Fail now, loudly, rather than at flash time.
       - name: Put Zephyr SDK toolchain on PATH
         run: |
-          SDK_BIN="$GITHUB_WORKSPACE/zephyr-sdk/arm-zephyr-eabi/bin"
-          if [ ! -x "$SDK_BIN/arm-zephyr-eabi-gdb" ]; then
-            echo "::error::no arm-zephyr-eabi-gdb at $SDK_BIN"
-            echo "Zephyr SDK layout:"
-            find "$GITHUB_WORKSPACE/zephyr-sdk" -maxdepth 2 -name "arm-zephyr-eabi*" 2>/dev/null || true
+          # Search rather than assume a layout: SDK 0.17 puts the toolchain at
+          # <root>/arm-zephyr-eabi/bin, SDK 1.x at <root>/gnu/arm-zephyr-eabi/bin.
+          SDK_GDB=$(find "$GITHUB_WORKSPACE/zephyr-sdk" -type f \
+                      -name arm-zephyr-eabi-gdb 2>/dev/null | head -1)
+          if [ -z "$SDK_GDB" ]; then
+            echo "::error::no arm-zephyr-eabi-gdb anywhere under $GITHUB_WORKSPACE/zephyr-sdk"
+            find "$GITHUB_WORKSPACE/zephyr-sdk" -maxdepth 3 -name "arm-zephyr-eabi*" 2>/dev/null || true
             exit 1
           fi
-          echo "$SDK_BIN" >> "$GITHUB_PATH"
-          "$SDK_BIN/arm-zephyr-eabi-gdb" --version | head -1
+          echo "$(dirname "$SDK_GDB")" >> "$GITHUB_PATH"
+          "$SDK_GDB" --version | head -1
 
       # Build before reserving. Nothing here needs hardware, and a Notestation
       # held through a Zephyr build is exclusive time nobody else can use.

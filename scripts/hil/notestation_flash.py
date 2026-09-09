@@ -73,10 +73,18 @@ def find_gdb() -> str | None:
     for parent in ("/opt/toolchains", "/opt"):
         roots.extend(sorted(Path(parent).glob("zephyr-sdk-*"), reverse=True))
 
+    # SDK 0.17 puts the toolchain at <root>/arm-zephyr-eabi/bin; SDK 1.x moved
+    # it under a gnu/ directory. Try both rather than pinning to either.
+    subpaths = (
+        Path("arm-zephyr-eabi") / "bin" / "arm-zephyr-eabi-gdb",
+        Path("gnu") / "arm-zephyr-eabi" / "bin" / "arm-zephyr-eabi-gdb",
+    )
+
     for root in roots:
-        candidate = root / "arm-zephyr-eabi" / "bin" / "arm-zephyr-eabi-gdb"
-        if candidate.is_file():
-            return str(candidate)
+        for subpath in subpaths:
+            candidate = root / subpath
+            if candidate.is_file():
+                return str(candidate)
 
     print(
         "no arm-zephyr-eabi-gdb found under: "
