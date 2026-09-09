@@ -22,6 +22,7 @@ import argparse
 import json
 import os
 import shutil
+import socket
 import subprocess
 import sys
 import time
@@ -94,8 +95,8 @@ def find_gdb() -> str | None:
     return None
 
 
-def read_gdb_target(reservation_dir: str) -> tuple[str, int]:
-    """Return (hostname, gdb_port) for the reservation's host MCU debug server."""
+def read_debug_server(reservation_dir: str) -> tuple[str, int, int]:
+    """Return (hostname, gdb_port, telnet_port) for the host MCU debug server."""
     path = Path(reservation_dir) / "reservation.json"
     with path.open(encoding="utf-8") as handle:
         reservation = json.load(handle)
@@ -106,10 +107,10 @@ def read_gdb_target(reservation_dir: str) -> tuple[str, int]:
 
     for server in reservation.get("debug_servers") or []:
         if server.get("target") == "host_mcu":
-            port = server.get("gdb_port")
-            if not port:
+            gdb_port = server.get("gdb_port")
+            if not gdb_port:
                 raise ValueError(f"{path} host_mcu debug server has no 'gdb_port'")
-            return hostname, int(port)
+            return hostname, int(gdb_port), int(server.get("telnet_port") or 0)
 
     raise ValueError(
         f"{path} exposes no host_mcu debug server -- the reservation needs a "
@@ -117,11 +118,60 @@ def read_gdb_target(reservation_dir: str) -> tuple[str, int]:
     )
 
 
+def openocd_reset_run(hostname: str, telnet_port: int, timeout: float = 30.0) -> bool:
+    """Reset the target and let it run, over OpenOCD's telnet interface.
+
+    Done outside GDB rather than as a `monitor reset run`, because what state
+    the core is left in when GDB detaches depends on the OpenOCD target's
+    gdb-detach event handling. A core left halted looks exactly like a board
+    whose USB never came up: no CDC ACM device, so the Notestation drops the
+    host_mcu_usb symlink and even `reserve_notestation` starts failing.
+    """
+    if not telnet_port:
+        print(
+            "error: host MCU debug server exposes no telnet_port, so the core "
+            "cannot be resumed after flashing",
+            file=sys.stderr,
+        )
+        return False
+
+    print(f"Resetting target via OpenOCD telnet {hostname}:{telnet_port}", flush=True)
+    try:
+        with socket.create_connection((hostname, telnet_port), timeout=timeout) as sock:
+            sock.settimeout(timeout)
+            # Drain the banner and prompt before issuing anything.
+            time.sleep(0.5)
+            try:
+                sock.recv(4096)
+            except (TimeoutError, OSError):
+                pass
+
+            sock.sendall(b"reset run\n")
+            time.sleep(1.0)
+            try:
+                reply = sock.recv(4096).decode("utf-8", errors="replace")
+            except (TimeoutError, OSError):
+                reply = ""
+            if reply.strip():
+                print(reply.strip(), flush=True)
+    except OSError as exc:
+        print(f"error: OpenOCD telnet reset failed: {exc}", file=sys.stderr)
+        return False
+
+    return True
+
+
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
+        "--reset-only",
+        action="store_true",
+        help="Reset the target and let it run, without flashing. Recovers a "
+        "board left halted, which the Notestation reports as a missing "
+        "host_mcu_usb device.",
+    )
+    parser.add_argument(
         "--build-dir",
-        required=True,
         help="Build directory; the image is at <build-dir>/zephyr/zephyr.elf.",
     )
     parser.add_argument(
@@ -219,11 +269,6 @@ def flash_over_gdb(gdb: str, elf: Path, hostname: str, port: int) -> bool:
         "-ex", f"target extended-remote {hostname}:{port}",
         "-ex", "monitor reset halt",
         "-ex", "load",
-        "-ex", "monitor reset run",
-        # Report whether the core is actually running before we let go. A target
-        # left halted looks identical, from the host, to a board whose USB never
-        # came up.
-        "-ex", "monitor targets",
         "-ex", "detach",
         str(elf),
     ]
@@ -254,19 +299,26 @@ def flash_over_gdb(gdb: str, elf: Path, hostname: str, port: int) -> bool:
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
 
-    elf = Path(args.build_dir) / "zephyr" / "zephyr.elf"
-    if not elf.is_file():
-        print(f"error: no image to flash at {elf}", file=sys.stderr)
+    if not args.reset_only and not args.build_dir:
+        print("error: --build-dir is required unless --reset-only", file=sys.stderr)
         return 1
 
-    gdb = args.gdb or find_gdb()
-    if gdb is None:
-        print(
-            "error: no arm-zephyr-eabi-gdb on PATH and ZEPHYR_SDK_INSTALL_DIR "
-            "did not contain one. A plain gdb cannot flash an ARM target.",
-            file=sys.stderr,
-        )
-        return 1
+    elf = None
+    gdb = None
+    if not args.reset_only:
+        elf = Path(args.build_dir) / "zephyr" / "zephyr.elf"
+        if not elf.is_file():
+            print(f"error: no image to flash at {elf}", file=sys.stderr)
+            return 1
+
+        gdb = args.gdb or find_gdb()
+        if gdb is None:
+            print(
+                "error: no arm-zephyr-eabi-gdb on PATH and no Zephyr SDK found. "
+                "A plain gdb cannot flash an ARM target.",
+                file=sys.stderr,
+            )
+            return 1
 
     if not args.reservation_dir:
         print(
@@ -277,12 +329,18 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     try:
-        hostname, port = read_gdb_target(args.reservation_dir)
+        hostname, gdb_port, telnet_port = read_debug_server(args.reservation_dir)
     except (OSError, ValueError, json.JSONDecodeError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
 
-    if not flash_over_gdb(gdb, elf, hostname, port):
+    if not args.reset_only:
+        if not flash_over_gdb(gdb, elf, hostname, gdb_port):
+            return 1
+
+    # Always reset afterwards, including in --reset-only mode: this is what
+    # gets the core running and its USB console back.
+    if not openocd_reset_run(hostname, telnet_port):
         return 1
 
     if args.wait_for_port:

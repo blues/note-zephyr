@@ -172,6 +172,42 @@ application rather than a test binary and so has no twister harness. It exits
 non-zero on a timeout and fails fast if a `<err>` line or a Zephyr fatal shows
 up before the expected string.
 
+## Recovering a halted board
+
+The Swan's USB console only exists while the core is running, so a board left
+halted by a debugger presents no USB device at all. The Notestation then drops
+the `host_mcu_usb` symlink, and `reserve_notestation` **fails for everyone** —
+it waits 30s for that symlink and gives up:
+
+```
+Waiting for interface symlinks to appear...
+Timed out after 30s waiting for: Host MCU USB symlink at .../host_mcu_usb
+```
+
+That is a station-wide problem, not a note-zephyr one: any workflow reserving
+that Notestation hits it, including note-c's HIL job.
+
+Because the action fails before exporting anything, **this workflow cannot
+recover the board itself**. Recovery needs someone on the Tailnet:
+
+```bash
+# The raw client does not wait for interface symlinks, so it still reserves.
+notestation-client reserve --notestation barcelona-notestation-1 &
+RESV_PID=$!
+sleep 5
+notestation-client reset --host-mcu --notestation barcelona-notestation-1
+kill $RESV_PID
+```
+
+`scripts/hil/notestation_flash.py --reset-only` does the same thing over
+OpenOCD's telnet port, given a reservation directory.
+
+To stop it happening in the first place, the flash script resets the target
+over OpenOCD's telnet interface *after* GDB has detached, rather than relying
+on `monitor reset run` inside the GDB session — what state the core is left in
+when GDB disconnects depends on the OpenOCD target's gdb-detach event handling,
+and leaving it halted is what causes the above.
+
 ## Enabling the PR trigger
 
 The workflow has no `pull_request` trigger yet. Adding one is a two-line change
