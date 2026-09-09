@@ -3,3 +3,4 @@ build:
   kconfig: Kconfig.notecard
   settings:
     dts_root: .
+    snippet_root: .

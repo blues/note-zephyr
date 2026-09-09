@@ -6,11 +6,11 @@ tests:
       - notecard
       - hil
     # The Notestations wire the Swan's native USB, not its lpuart1 pins, so the
-    # board's default console is not reachable from CI. This snippet moves the
-    # console onto USB CDC ACM, which is the device the reservation exposes as
-    # NS_HOST_MCU_USB.
+    # board's default console is not reachable from CI. This snippet, provided
+    # by this module, moves the console onto USB CDC ACM -- the device the
+    # reservation exposes as NS_HOST_MCU_USB. See snippets/notestation.
     required_snippets:
-      - cdc-acm-console
+      - notestation
     harness: ztest
     harness_config:
       # These cases only mean anything against a real Notecard, so they are

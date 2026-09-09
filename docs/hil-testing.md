@@ -66,13 +66,13 @@ it**. `barcelona-notestation-1` exposes only `host_mcu_usb` and `notecard_usb`;
 both `NS_HOST_MCU_UART0` and `NS_HOST_MCU_UART1` are empty. `note-c`'s HIL
 workflow uses `host_mcu_usb` on the same station for the same reason.
 
-So both HIL builds apply Zephyr's [`cdc-acm-console`][snippet] snippet, moving
-the console onto the Swan's native USB — `required_snippets` in
-`testcase.yaml` for the suite, `-S cdc-acm-console` for the blinky build. The
-snippet brings in the USB device stack and initialises CDC ACM at boot, so no
-application code changes.
-
-[snippet]: https://docs.zephyrproject.org/latest/build/snippets/index.html
+So both HIL builds apply this repo's [`notestation`](../snippets/notestation)
+snippet, which moves the console onto the Swan's native USB —
+`required_snippets` in `testcase.yaml` for the suite, `-S notestation` for the
+blinky build. It is provided by the module via `snippet_root` in
+`zephyr/module.yml`, so it resolves by name in any west workspace that includes
+note-zephyr, with no path arguments. It brings in the USB device stack and
+initialises CDC ACM at boot, so no application code changes.
 
 That buys a working console at the cost of a soft-USB device, which needs three
 things to be true:
@@ -86,9 +86,9 @@ things to be true:
   exits, so `notestation_flash.py` polls until the reservation's symlink is back
   *and* can be opened. Existence alone is not enough — the symlink can reappear
   before the endpoint accepts an open.
-- **`CONFIG_BOOT_DELAY=3000`.** Otherwise the board can emit the ztest banner
-  into a port nobody is reading yet, and twister waits for output that has
-  already gone.
+- **`CONFIG_BOOT_DELAY=3000`**, set by the snippet. Otherwise the board can
+  emit the ztest banner into a port nobody is reading yet, and twister waits
+  for output that has already gone.
 
 If the selected device is empty on the reserved Notestation, the workflow fails
 immediately and prints every `NS_*` device the reservation *did* expose, so a
@@ -98,8 +98,8 @@ silent port until the job timeout.
 
 If a Notestation ever does wire `lpuart1` through to the Pi, that is the better
 console: set `console_env` to the matching `NS_HOST_MCU_UART*`, drop
-`--flash-before` and the snippet, and the soft-USB machinery above becomes
-unnecessary.
+`--flash-before` and the `notestation` snippet, and the soft-USB machinery above
+becomes unnecessary.
 
 ## Running the suite locally
 

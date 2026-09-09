@@ -33,9 +33,9 @@ on:
       console_env:
         description: >
           Which reserved device carries the Zephyr console. The builds use the
-          cdc-acm-console snippet to put it on the Swan's native USB, because
-          that is what the Notestations wire up; the UART options are here for
-          a station that exposes lpuart1 instead.
+          `notestation` snippet to put it on the Swan's native USB, because that
+          is what the Notestations wire up; the UART options are here for a
+          station that exposes lpuart1 instead.
         type: choice
         options:
           - NS_HOST_MCU_USB
@@ -147,7 +147,7 @@ jobs:
         run: |
           west build -p -b swan_r5 . \
             -d "$GITHUB_WORKSPACE/blinky-build" \
-            -S cdc-acm-console \
+            -S notestation \
             -- \
             -DDTC_OVERLAY_FILE=../overlays/i2c.overlay \
             -DEXTRA_CONF_FILE="$GITHUB_WORKSPACE/note-zephyr/scripts/hil/smoke.conf"
