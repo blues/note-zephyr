@@ -1,0 +1,25 @@
+/ {
+
+	buttons {
+		compatible = "gpio-keys";
+		buttonDFU: button_dfu {
+			gpios = <&gpio0 10 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>;
+			label = "DFU activation button";
+		};
+	};
+
+
+	aliases {
+		mcuboot-led0 = &led0;
+//		mcuboot-button0 = &button0;	// to use the onboard button on the Adafruit nRF52840 Feather Express
+
+		// use the pin defined above to enter boot mode.
+		mcuboot-button0 = &buttonDFU;
+	};
+};
+
+&uicr {
+    // Configures NFC pins (GPIOs 0.09 and 0.10) as regular GPIOs. Needed because Notecard's AUX3
+    // connects to GPIO 0.10 on Feather Express when Notecarrier F is used.
+    nfct-pins-as-gpios;
+};

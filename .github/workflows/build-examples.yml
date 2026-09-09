@@ -16,6 +16,10 @@ jobs:
           - blinky
           - message-queues
           - shell
+          - outboard-dfu
+          # NOTE: mcuboot-blinky is intentionally excluded. It targets the
+          # Adafruit Feather nRF52840 (not swan_r5) and builds MCUboot via a
+          # child image, so it does not fit this swan_r5 + overlay matrix.
         overlay:
           - i2c.overlay
           - uart.overlay
@@ -25,7 +29,7 @@ jobs:
           - v4.4.0
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           path: note-zephyr
           fetch-depth: 1
@@ -36,9 +40,9 @@ jobs:
           sed -i 's/revision: .*/revision: ${{ matrix.zephyr-version }}/' note-zephyr/west.yml
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
-          python-version: 3.12
+          python-version: "3.12"
 
       - name: Setup Zephyr project
         uses: zephyrproject-rtos/action-zephyr-setup@v1
