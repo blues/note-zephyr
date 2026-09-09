@@ -214,6 +214,19 @@ jobs:
           echo "Using $CONSOLE_ENV -> $CONSOLE_PORT"
           echo "CONSOLE_PORT=$CONSOLE_PORT" >> "$GITHUB_ENV"
 
+          # The variable being set does not mean the device exists: the action
+          # exports the path either way. Record what the reservation actually
+          # tunnelled, so a device that never appears can be told apart from one
+          # that disappears when the board is flashed.
+          echo "Reservation contents before flashing:"
+          ls -l "$NS_RESERVATION_DIR" || true
+          if [ -e "$CONSOLE_PORT" ]; then
+            echo "$CONSOLE_PORT exists before flashing"
+          else
+            echo "::warning::$CONSOLE_PORT does not exist yet -- the board may" \
+                 "not be running firmware that brings up its USB console"
+          fi
+
       # Stage one: a known-good example. If this fails, the problem is the
       # reserve/flash/console chain rather than anything in the test suite.
       - name: Smoke test blinky on hardware

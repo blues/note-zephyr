@@ -189,6 +189,23 @@ def wait_for_port(path: str, timeout: float) -> bool:
             f"error: {path} did not reappear within {timeout}s of flashing",
             file=sys.stderr,
         )
+
+    # Whether the device was ever there distinguishes "the board is not running
+    # the new firmware" from "this reservation never tunnelled that device".
+    parent = Path(path).parent
+    print(f"contents of {parent}:", file=sys.stderr)
+    try:
+        for entry in sorted(parent.iterdir()):
+            target = ""
+            if entry.is_symlink():
+                try:
+                    target = f" -> {os.readlink(entry)}"
+                except OSError:
+                    target = " -> (unreadable)"
+            print(f"  {entry.name}{target}", file=sys.stderr)
+    except OSError as exc:
+        print(f"  (could not list: {exc})", file=sys.stderr)
+
     return False
 
 
@@ -203,6 +220,10 @@ def flash_over_gdb(gdb: str, elf: Path, hostname: str, port: int) -> bool:
         "-ex", "monitor reset halt",
         "-ex", "load",
         "-ex", "monitor reset run",
+        # Report whether the core is actually running before we let go. A target
+        # left halted looks identical, from the host, to a board whose USB never
+        # came up.
+        "-ex", "monitor targets",
         "-ex", "detach",
         str(elf),
     ]
