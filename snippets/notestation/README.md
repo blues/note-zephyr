@@ -42,6 +42,35 @@ hard failure — so a board flashed with a UART-console build could make the who
 station unreservable, including for other repositories' jobs. Using this snippet
 keeps a USB device present across reflashes.
 
+## Why the legacy USB device stack
+
+The snippet sets `CONFIG_USB_DEVICE_STACK`, **not**
+`CONFIG_USB_DEVICE_STACK_NEXT`, and that is load-bearing rather than
+conservatism.
+
+Zephyr gates new-stack support per board through the `usbd` entry in a board's
+`supported:` list — upstream's new-stack CDC ACM sample carries
+`depends_on: usbd`. At the pinned `v4.4.0`, `boards/blues/swan_r5/swan_r5.yaml`
+lists `usb_device` and not `usbd`: the Swan claims the legacy stack only. The
+same sample's `integration_platforms` name `stm32f723e_disco` and
+`nucleo_f413zh` — F7 and F4 — and no STM32L4 at all, so the new stack has no
+upstream coverage on this SoC family.
+
+Nothing gates this at build time. A new-stack image for `swan_r5` configures,
+compiles and links cleanly, then never enumerates. That failure is close to
+invisible: the driver reports it with `LOG_ERR`, and the only console the board
+has is the USB device that just failed to come up, so the explanation is written
+to the thing that is broken. From CI it looks like a Notestation fault — the
+`host_mcu_usb` symlink never appears — rather than a firmware one.
+
+The legacy stack is marked `DEPRECATED` upstream, so builds print a Kconfig
+deprecation warning. That is expected and does not fail the build: twister's
+`--warnings-as-errors` sets `CONFIG_COMPILER_WARNINGS_AS_ERRORS`, which governs
+compiler warnings, not Kconfig ones. When `swan_r5` gains `usbd` in its
+`supported:` list, switch this file to `CONFIG_USB_DEVICE_STACK_NEXT` and drop
+this section — the devicetree overlay needs no change, because both stacks
+consume the same `zephyr,cdc-acm-uart` binding.
+
 ## Boot delay
 
 `CONFIG_BOOT_DELAY=3000` is deliberate. The USB console vanishes while the board

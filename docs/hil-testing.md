@@ -74,6 +74,14 @@ blinky build. It is provided by the module via `snippet_root` in
 note-zephyr, with no path arguments. It brings in the USB device stack and
 initialises CDC ACM at boot, so no application code changes.
 
+It deliberately uses the *legacy* `CONFIG_USB_DEVICE_STACK`. `swan_r5.yaml` at
+`v4.4.0` declares `usb_device` but not `usbd`, so the board claims support for
+that stack and not `USB_DEVICE_STACK_NEXT`, which has no STM32L4 coverage
+upstream. A new-stack build links cleanly and then never enumerates, and since
+the console *is* the USB device that failed, the board says nothing about why —
+it presents to CI as a Notestation fault. See
+[the snippet's README](../snippets/notestation/README.md).
+
 That buys a working console at the cost of a soft-USB device, which needs three
 things to be true:
 
