@@ -101,7 +101,7 @@ consume the same `zephyr,cdc-acm-uart` binding.
 
 ## Boot delay
 
-`CONFIG_BOOT_DELAY=10000` is deliberate. The USB console vanishes while the
+`CONFIG_BOOT_DELAY=20000` is deliberate. The USB console vanishes while the
 board is flashed and returns only after re-enumeration, so a host reading it can
 otherwise miss the beginning of the output — including a ztest banner, which
 leaves twister waiting for something already gone.
@@ -112,6 +112,17 @@ measured at 1.0s on one run and 4.5s on the next; at 3000ms the slower run lost
 the race and the smoke test then sat in silence until its timeout, because
 blinky prints nothing after `Entering main loop`. 10s is margin over the worst
 observed rather than a tuned value.
+
+Twister sets the real floor, and it is higher than re-enumeration alone.
+After `--flash-command` returns, its `--flash-before` path waits for the port
+to appear in pyserial's `list_ports.comports()` before opening it, capped at
+`max(10, flash_timeout * 0.2)` seconds. `comports()` enumerates real serial
+devices, and a Notestation console is a symlink to a pty, so that wait can
+never succeed and always runs its full 10s. Twister therefore starts reading
+roughly 12–15s after reset. The ztest suite is five quick Notecard
+transactions, so at a 10s delay it had already finished printing before
+anything was listening — which shows up as an empty `handler.log` and a bare
+`Unknown Error`.
 
 Zephyr has no DTR-gated console option that would make this exact — only
 `CONFIG_SHELL_BACKEND_SERIAL_CHECK_DTR`, which gates the shell backend, not the
