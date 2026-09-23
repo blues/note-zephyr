@@ -201,13 +201,16 @@ jobs:
 
       # Exports NS_* environment variables and releases the reservation in a
       # post step, even if the job fails or is cancelled.
-      # notestation-actions#2 makes an absent interface a warning rather than a
-      # hard failure, which this job wants but does not strictly need: a fresh
-      # reservation always re-creates the symlink, so reserve succeeds even
-      # after a previous run lost it. Pinned to the released tag; move to the
-      # tag that carries #2 once it lands.
+      # Pinned to the branch of notestation-actions#2, which this job genuinely
+      # needs. v1.0.2 treats an absent interface symlink as a hard failure, and
+      # host_mcu_usb is absent exactly when the board is running firmware whose
+      # USB VID/PID matches no udev rule on the station -- which is the state a
+      # failed run leaves behind. Reserve then fails *before* the flash step
+      # that would put a correct image back on, so the only way out is a human
+      # with Tailnet access. Repin to a released tag once #2 lands, and before
+      # merging this PR.
       - name: Reserve Notestation
-        uses: blues/notestation-actions/reserve_notestation@v1.0.2
+        uses: blues/notestation-actions/reserve_notestation@alex-dont-fail-on-absent-interfaces
         with:
           notestation: ${{ inputs.notestation }}
           tags: ${{ inputs.notestation == '' && (inputs.notestation_tags || 'mcu_swan mcu_debugger') || '' }}
@@ -276,7 +279,10 @@ jobs:
       # firmware change and only the gdb_port the reservation already exposes.
       # Leaves the core running, so it does not wedge the station.
       - name: Diagnose USB on failure
-        if: failure()
+        # Needs a reservation to reach the gdb_port. Without that guard a
+        # failure *before* reserving reports a confusing missing-reservation.json
+        # error over the top of the real one.
+        if: failure() && env.NS_RESERVATION_DIR != ''
         run: |
           python note-zephyr/scripts/hil/usb_probe.py \
             --reservation-dir "$NS_RESERVATION_DIR" \
