@@ -1,0 +1,339 @@
+---
+name: HIL Tests
+
+# Hardware-in-the-loop tests. These reserve a Notestation -- a Raspberry Pi
+# with a real Swan and Notecard attached, reachable over the Blues Tailnet --
+# flash it, and assert on what the board says over its console.
+#
+# Runs on every PR. The repo averages under two PRs a month and a run holds the
+# hardware for about five minutes, so contention with note-c's HIL job on the
+# same station is not a real concern. See docs/hil-testing.md.
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      notestation_tags:
+        description: >
+          Space-separated tags used to pick a Notestation. Needs mcu_swan for
+          the board and mcu_debugger for the SWD probe that flashing goes
+          through.
+        type: string
+        default: mcu_swan mcu_debugger
+      notestation:
+        description: >
+          Specific Notestation hostname, e.g. barcelona-notestation-1. Takes
+          precedence over notestation_tags when set.
+        type: string
+        default: ''
+      console_env:
+        description: >
+          Which reserved device carries the Zephyr console. The builds use the
+          `notestation` snippet to put it on the Swan's native USB, because that
+          is what the Notestations wire up; the UART options are here for a
+          station that exposes lpuart1 instead.
+        type: choice
+        options:
+          - NS_HOST_MCU_USB
+          - NS_HOST_MCU_UART0
+          - NS_HOST_MCU_UART1
+        default: NS_HOST_MCU_USB
+      zephyr_version:
+        description: 'Zephyr revision to build against.'
+        type: string
+        default: v4.4.0
+  schedule:
+    # Nightly, after the note-c HIL job so the two do not fight over hardware.
+    - cron: '0 9 * * *'
+
+permissions:
+  checks: write
+  contents: read
+
+# A Notestation is an exclusive resource. A new run on the same ref cancels the
+# in-flight one rather than queueing behind its own reservation.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NOTESTATION_CLIENT_VERSION: notestation-v3.6.0
+  ZEPHYR_VERSION: ${{ inputs.zephyr_version || 'v4.4.0' }}
+  CONSOLE_ENV: ${{ inputs.console_env || 'NS_HOST_MCU_USB' }}
+
+jobs:
+  hil:
+    # Skip, rather than fail, anything that structurally cannot see the
+    # secrets. Fork PRs do not get them. Neither do Dependabot PRs: GitHub
+    # gives those a separate Dependabot secret store, which is empty for this
+    # repo, so TAILSCALE_OAUTH_* would be blank and the job would go red for a
+    # credentials reason on every note-c bump. Those bumps are the changes most
+    # worth testing here, so this skip is a stopgap -- copy the four secrets
+    # into Settings > Secrets > Dependabot and delete the actor check. Until
+    # then the nightly schedule catches a bad bump within a day of merge.
+    if: >-
+      github.event.repository.fork != true &&
+      github.actor != 'dependabot[bot]' &&
+      (github.event_name != 'pull_request' ||
+       github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-latest
+    # A healthy run builds, reserves, flashes and tests well inside this. The
+    # cap stops a hung serial read from holding the hardware for hours.
+    timeout-minutes: 45
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          path: note-zephyr
+          fetch-depth: 1
+          submodules: recursive
+
+      - name: Pin Zephyr revision
+        run: |
+          sed -i "s/revision: .*/revision: ${ZEPHYR_VERSION}/" note-zephyr/west.yml
+          cat note-zephyr/west.yml
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Setup Zephyr project
+        uses: zephyrproject-rtos/action-zephyr-setup@v1
+        with:
+          app-path: note-zephyr
+          toolchains: arm-zephyr-eabi
+
+      # twister needs these for --device-testing specifically; the Zephyr
+      # requirements installed above do not always pull them in.
+      - name: Install twister device-testing dependencies
+        run: pip install tabulate pyserial
+
+      # Flashing goes over GDB, and only the SDK's arm-zephyr-eabi-gdb can talk
+      # to an ARM target. action-zephyr-setup extracts the SDK here but leaves
+      # its bin off PATH. Fail now, loudly, rather than at flash time.
+      - name: Put Zephyr SDK toolchain on PATH
+        run: |
+          # Search rather than assume a layout: SDK 0.17 puts the toolchain at
+          # <root>/arm-zephyr-eabi/bin, SDK 1.x at <root>/gnu/arm-zephyr-eabi/bin.
+          SDK_GDB=$(find "$GITHUB_WORKSPACE/zephyr-sdk" -type f \
+                      -name arm-zephyr-eabi-gdb 2>/dev/null | head -1)
+          if [ -z "$SDK_GDB" ]; then
+            echo "::error::no arm-zephyr-eabi-gdb anywhere under $GITHUB_WORKSPACE/zephyr-sdk"
+            find "$GITHUB_WORKSPACE/zephyr-sdk" -maxdepth 3 -name "arm-zephyr-eabi*" 2>/dev/null || true
+            exit 1
+          fi
+          echo "$(dirname "$SDK_GDB")" >> "$GITHUB_PATH"
+          "$SDK_GDB" --version | head -1
+
+      # Build before reserving. Nothing here needs hardware, and a Notestation
+      # held through a Zephyr build is exclusive time nobody else can use.
+      # `west twister` rather than $ZEPHYR_BASE/scripts/twister:
+      # action-zephyr-setup does not export ZEPHYR_BASE to later steps, and
+      # west resolves the workspace from the working directory anyway.
+      - name: Build HIL test suite
+        run: |
+          # -W (--disable-warnings-as-errors) is required, not cosmetic. The
+          # notestation snippet builds the console on the legacy USB device
+          # stack -- the only one swan_r5 supports -- and Zephyr marks that
+          # stack's macros with __DEPRECATED_MACRO, a bare `#pragma GCC
+          # warning`. GCC gives those diagnostics no -W category, so they
+          # cannot be demoted individually; under twister's default -Werror
+          # Zephyr's own subsys/usb/device sources fail to compile.
+          west twister \
+            -p swan_r5 \
+            -T note-zephyr/tests \
+            --fixture notecard_i2c \
+            --build-only \
+            --clobber-output \
+            -W \
+            -O twister-out \
+            --inline-logs
+
+      - name: Build blinky smoke-test image
+        working-directory: note-zephyr/examples/blinky
+        run: |
+          west build -p -b swan_r5 . \
+            -d "$GITHUB_WORKSPACE/blinky-build" \
+            -S notestation \
+            -- \
+            -DDTC_OVERLAY_FILE=../overlays/i2c.overlay \
+            -DEXTRA_CONF_FILE="$GITHUB_WORKSPACE/note-zephyr/scripts/hil/smoke.conf"
+
+      # TAILSCALE_OAUTH_* are org-level secrets, so nothing has to be copied
+      # into this repo. Note these are *not* note-c's TS_OAUTH_* names -- those
+      # are repo-local to note-c. Version pinned to match blues/hub rather than
+      # tracking `latest`.
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v4
+        with:
+          oauth-client-id: ${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TAILSCALE_OAUTH_CLIENT_SECRET }}
+          tags: tag:ci
+          version: 1.96.4
+
+      # notestation-client lives in the private blues/notestation repo, and the
+      # current pattern for reaching it is a short-lived GitHub App token scoped
+      # to that one repo rather than a long-lived PAT. The app id is a variable
+      # (not a secret) because it is not sensitive.
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ vars.BLUES_NOTE_ZEPHYR_AUTOMATION_APP_ID }}
+          private-key: ${{ secrets.BLUES_NOTE_ZEPHYR_AUTOMATION_PRIVATE_KEY }}
+          owner: blues
+          repositories: notestation
+
+      - name: Install notestation-client
+        uses: blues/notestation-actions/install_notestation_client@v1.0.2
+        with:
+          version: ${{ env.NOTESTATION_CLIENT_VERSION }}
+          token: ${{ steps.app-token.outputs.token }}
+
+      # Which stations carry which hardware is not recorded in any repo, and
+      # tag-based reservation picks the first match -- which is no help when
+      # that match is a station whose host MCU is currently presenting no USB
+      # device. Log the inventory so a specific host can be chosen.
+      - name: List Notestations
+        continue-on-error: true
+        run: notestation-client list --all --json
+
+      # Exports NS_* environment variables and releases the reservation in a
+      # post step, even if the job fails or is cancelled.
+      # v1.0.2 treats an absent interface symlink as a hard failure. That is
+      # survivable now the snippet presents the USB VID/PID the station's udev
+      # rule matches, because a healthy board is always named and so always
+      # reserves. It is not survivable if a board is ever left running firmware
+      # the station cannot name: reserve then fails *before* the flash step
+      # that would put a correct image back on, and recovery needs a human with
+      # Tailnet access. notestation-actions#2 turns that into a warning; move
+      # to the tag carrying it once it lands. Deliberately a released tag and
+      # not that PR's branch, which could be force-pushed or deleted.
+      - name: Reserve Notestation
+        uses: blues/notestation-actions/reserve_notestation@v1.0.2
+        with:
+          notestation: ${{ inputs.notestation }}
+          tags: ${{ inputs.notestation == '' && (inputs.notestation_tags || 'mcu_swan mcu_debugger') || '' }}
+          timeout: '600'
+          token: ${{ steps.app-token.outputs.token }}
+
+      # Which NS_HOST_MCU_* device the Swan's lpuart1 lands on is Notestation
+      # wiring, not something either repo records. Resolve it here and fail
+      # immediately -- naming what *was* available -- rather than letting
+      # twister hang on a device that does not exist.
+      - name: Resolve console device
+        run: |
+          CONSOLE_PORT="${!CONSOLE_ENV}"
+          if [ -z "$CONSOLE_PORT" ]; then
+            echo "::error::${CONSOLE_ENV} is empty on ${NS_HOSTNAME}."
+            echo "Devices this reservation does expose:"
+            for var in NS_HOST_MCU_USB NS_HOST_MCU_UART0 NS_HOST_MCU_UART1 \
+                       NS_NOTECARD_USB NS_NOTECARD_AUX_UART NS_NOTECARD_LP_UART; do
+              printf '  %s=%s\n' "$var" "${!var}"
+            done
+            echo "Re-run with console_env set to whichever of those is wired" \
+                 "to the Swan's lpuart1."
+            exit 1
+          fi
+          echo "Using $CONSOLE_ENV -> $CONSOLE_PORT"
+          echo "CONSOLE_PORT=$CONSOLE_PORT" >> "$GITHUB_ENV"
+
+          # The variable being set does not mean the device exists: the action
+          # exports the path either way. Record what the reservation actually
+          # tunnelled, so a device that never appears can be told apart from one
+          # that disappears when the board is flashed.
+          echo "Reservation contents before flashing:"
+          ls -l "$NS_RESERVATION_DIR" || true
+          if [ -e "$CONSOLE_PORT" ]; then
+            echo "$CONSOLE_PORT exists before flashing"
+          else
+            echo "::warning::$CONSOLE_PORT does not exist yet -- the board may" \
+                 "not be running firmware that brings up its USB console"
+          fi
+
+      # Stage one: a known-good example. If this fails, the problem is the
+      # reserve/flash/console chain rather than anything in the test suite.
+      - name: Smoke test blinky on hardware
+        run: |
+          # Same flash path twister uses, so a flashing problem shows up here
+          # rather than being discovered again one stage later.
+          # Re-enumeration was measured at 1.0s and 4.5s on this station, so
+          # 60s is ample. It is a backstop against a genuinely dead console,
+          # not a tuning knob -- waiting longer only delays a failure that has
+          # already happened.
+          python note-zephyr/scripts/hil/notestation_flash.py \
+            --build-dir "$GITHUB_WORKSPACE/blinky-build" \
+            --wait-timeout 60
+
+          python note-zephyr/scripts/hil/console_expect.py \
+            --port "$CONSOLE_PORT" \
+            --expect "Entering main loop" \
+            --timeout 90 \
+            --wait-for-port 60 \
+            --log "$GITHUB_WORKSPACE/blinky-console.log"
+
+      # When the console never appears, the board cannot say why: usb_dc_stm32
+      # reports the failure to a console that is itself the USB device that
+      # failed. Read the peripheral registers over SWD instead, which needs no
+      # firmware change and only the gdb_port the reservation already exposes.
+      # Leaves the core running, so it does not wedge the station.
+      - name: Diagnose USB on failure
+        # Needs a reservation to reach the gdb_port. Without that guard a
+        # failure *before* reserving reports a confusing missing-reservation.json
+        # error over the top of the real one.
+        if: failure() && env.NS_RESERVATION_DIR != ''
+        run: |
+          python note-zephyr/scripts/hil/usb_probe.py \
+            --reservation-dir "$NS_RESERVATION_DIR" \
+            --elf "$GITHUB_WORKSPACE/blinky-build/zephyr/zephyr.elf"
+
+      # Stage two: the ztest suite. --test-only reuses the images built before
+      # the reservation, and --no-clean stops twister renaming that outdir.
+      #
+      # --flash-before is required because the console is USB CDC ACM: the port
+      # is torn down while the board is flashed, so twister must not be holding
+      # it open across the flash. The flash script does not return until the
+      # device is back, since twister's serial open has no retry.
+      - name: Run HIL test suite
+        run: |
+          west twister \
+            -p swan_r5 \
+            -T note-zephyr/tests \
+            --fixture notecard_i2c \
+            --test-only \
+            --no-clean \
+            -O twister-out \
+            -W \
+            --device-testing \
+            --device-serial "$CONSOLE_PORT" \
+            --device-serial-baud 115200 \
+            --flash-before \
+            --flash-command "$GITHUB_WORKSPACE/note-zephyr/scripts/hil/notestation_flash.py" \
+            --inline-logs
+
+      - name: Publish test report
+        uses: mikepenz/action-junit-report@v3
+        if: success() || failure()
+        with:
+          report_paths: twister-out/twister.xml
+          check_name: Notecard HIL Tests
+          require_tests: true
+
+      - name: Upload logs
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: hil-logs
+          path: |
+            blinky-console.log
+            twister-out/twister.xml
+            twister-out/twister.json
+            twister-out/twister.log
+            twister-out/**/handler.log
+            twister-out/**/build.log
+          if-no-files-found: warn
+          retention-days: 14

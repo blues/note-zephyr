@@ -1,0 +1,19 @@
+/*
+ * Copyright (c) 2026 Blues Inc.
+ * SPDX-License-Identifier: MIT
+ *
+ * Move the console onto a USB CDC ACM device. See snippets/notestation/README.md.
+ */
+
+/ {
+	chosen {
+		zephyr,console = &notestation_cdc_acm_uart;
+		zephyr,shell-uart = &notestation_cdc_acm_uart;
+	};
+};
+
+&zephyr_udc0 {
+	notestation_cdc_acm_uart: notestation_cdc_acm_uart {
+		compatible = "zephyr,cdc-acm-uart";
+	};
+};

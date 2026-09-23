@@ -15,6 +15,7 @@ jobs:
         example:
           - blinky
           - message-queues
+          - binary
           - shell
           - outboard-dfu
           # NOTE: mcuboot-blinky is intentionally excluded. It targets the
