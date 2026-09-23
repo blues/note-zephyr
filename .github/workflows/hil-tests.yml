@@ -193,8 +193,15 @@ jobs:
 
       # Exports NS_* environment variables and releases the reservation in a
       # post step, even if the job fails or is cancelled.
+      # TEMPORARY: pinned to the branch of
+      # https://github.com/blues/notestation-actions/pull/2 rather than a tag.
+      # v1.0.2 treats an absent interface symlink as a hard failure, which makes
+      # this a deadlock: a board whose firmware presents no USB drops
+      # host_mcu_usb, and reserve then fails *before* the flash step that would
+      # put working firmware back on. Repin to a tag once #2 is merged and
+      # released, and before merging this PR.
       - name: Reserve Notestation
-        uses: blues/notestation-actions/reserve_notestation@v1.0.2
+        uses: blues/notestation-actions/reserve_notestation@alex-dont-fail-on-absent-interfaces
         with:
           notestation: ${{ inputs.notestation }}
           tags: ${{ inputs.notestation == '' && (inputs.notestation_tags || 'mcu_swan mcu_debugger') || '' }}
