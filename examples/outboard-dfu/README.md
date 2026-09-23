@@ -12,6 +12,24 @@ Once ODFU is enabled, the Notecard can flash a new host firmware image to the MC
 
 On a Notecarrier F the DFU signals are routed over the Notecard's AUX pins, so `mode` is set to `aux` on `card.dfu` and `card.aux` is set to `off` to free those pins for DFU.
 
+All three requests are checked, and the example exits if any of them fails. That is deliberate: nothing later in the example depends on them, so without the check a Notecard that rejected `card.dfu` would still blink the LED and still send Notes, and you would not find out that Outboard DFU was never enabled until an update silently failed to arrive.
+
+## Testing an update
+
+`dfu.status` reports the running firmware version to Notehub, and the example takes it from `FIRMWARE_VERSION` in [`src/main.c`](src/main.c):
+
+```c
+#define FIRMWARE_VERSION "1.0.0"
+```
+
+To watch an update complete end to end:
+
+1. Build and flash as below, leaving the version at `1.0.0`.
+2. Bump `FIRMWARE_VERSION` to `1.0.1` and rebuild.
+3. Upload `build/zephyr/zephyr.bin` to Notehub and schedule the update — see [Uploading Firmware to Notehub](https://dev.blues.io/guides-and-tutorials/notecard-guides/notecard-outboard-firmware-update/#uploading-firmware-to-notehub).
+
+Notehub uses the reported version to tell what is running, so if you skip step 2 a successful update looks identical to nothing having happened.
+
 ## Building and flashing
 
 Build for the Swan (`swan_r5`) or Cygnet (`cygnet`), over I2C or UART:

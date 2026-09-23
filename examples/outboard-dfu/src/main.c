@@ -20,6 +20,10 @@
 
 #define SLEEP_TIME_MS 10000
 
+// Reported to Notehub by dfu.status. Bump this before rebuilding if you want
+// to watch an Outboard DFU update complete.
+#define FIRMWARE_VERSION "1.0.0"
+
 #define LED0_NODE DT_ALIAS(led0)
 
 #if DT_NODE_HAS_STATUS(LED0_NODE, okay)
@@ -29,6 +33,27 @@ static const struct gpio_dt_spec led = GPIO_DT_SPEC_GET(LED0_NODE, gpios);
 #endif
 
 LOG_MODULE_REGISTER(main);
+
+// Issue one of the requests that enable Outboard DFU, failing loudly if it
+// does not land. Outboard DFU is the whole point of this example, but nothing
+// downstream depends on it: if one of these requests is dropped the LED still
+// blinks and Notes still arrive at Notehub, so a silent failure is
+// indistinguishable from success right up until an update is attempted.
+// Takes ownership of `req`, which may be NULL if the allocation failed.
+static bool dfu_request(J *req, const char *name)
+{
+    if (!req) {
+        LOG_ERR("Failed to allocate memory for %s request.", name);
+        return false;
+    }
+
+    if (!NoteRequest(req)) {
+        LOG_ERR("%s request failed; Outboard DFU is not enabled.", name);
+        return false;
+    }
+
+    return true;
+}
 
 int main(void)
 {
@@ -72,22 +97,31 @@ int main(void)
         JAddStringToObject(req, "name", "stm32");
         JAddBoolToObject(req, "on", true);
         JAddStringToObject(req, "mode", "aux");
-        NoteRequest(req);
+    }
+    if (!dfu_request(req, "card.dfu")) {
+        return -1;
     }
 
     // Free the AUX pins so they can be used for Outboard Firmware Update.
     req = NoteNewRequest("card.aux");
     if (req) {
         JAddStringToObject(req, "mode", "off");
-        NoteRequest(req);
+    }
+    if (!dfu_request(req, "card.aux")) {
+        return -1;
     }
 
     // Enable host DFU and report the running firmware version to Notehub.
+    // Bump FIRMWARE_VERSION when you rebuild to test an update -- Notehub uses
+    // this string to tell what is running, so leaving it unchanged makes a
+    // successful update look like nothing happened.
     req = NoteNewRequest("dfu.status");
     if (req) {
         JAddBoolToObject(req, "on", true);
-        JAddStringToObject(req, "version", "1.0.0");
-        NoteRequest(req);
+        JAddStringToObject(req, "version", FIRMWARE_VERSION);
+    }
+    if (!dfu_request(req, "dfu.status")) {
+        return -1;
     }
 
     LOG_INF("Entering main loop...");
