@@ -30,7 +30,24 @@ except ImportError:
 
 # Substrings that mean the run is already lost. The Zephyr log prefixes errors
 # with <err>, and the examples log their own failures via LOG_ERR.
-DEFAULT_FAILURE_PATTERNS = ["<err>", "Failed to", "BUS FAULT", "***** "]
+# Zephyr frames fatal errors in banners of asterisks, but it frames some
+# entirely ordinary notices the same way -- notably "***** delaying boot 3000ms
+# *****", which the notestation snippet's CONFIG_BOOT_DELAY produces on every
+# boot. Matching on the asterisks alone therefore fails every healthy run, so
+# these name the fatal banners specifically.
+DEFAULT_FAILURE_PATTERNS = [
+    "<err>",
+    "Failed to",
+    "BUS FAULT",
+    "HARD FAULT",
+    "USAGE FAULT",
+    "MPU FAULT",
+    "SECURE FAULT",
+    "CPU exception",
+    "Kernel Panic",
+    "Kernel OOPS",
+    "ZEPHYR FATAL ERROR",
+]
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:

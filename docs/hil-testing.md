@@ -183,6 +183,12 @@ application rather than a test binary and so has no twister harness. It exits
 non-zero on a timeout and fails fast if a `<err>` line or a Zephyr fatal shows
 up before the expected string.
 
+Its failure patterns name the fatal banners individually rather than matching
+the row of asterisks Zephyr wraps them in. Zephyr uses that same framing for
+ordinary notices — `***** delaying boot 3000ms (per build configuration) *****`
+appears on every boot, because the snippet sets `CONFIG_BOOT_DELAY` — so a
+pattern of just `***** ` fails every healthy run.
+
 ## Why the console needs a specific USB VID/PID
 
 A Notestation names its serial devices with a udev rule that matches on USB
