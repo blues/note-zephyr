@@ -183,10 +183,66 @@ application rather than a test binary and so has no twister harness. It exits
 non-zero on a timeout and fails fast if a `<err>` line or a Zephyr fatal shows
 up before the expected string.
 
+## Known blocker: the console tunnel does not survive a flash
+
+**The smoke test currently fails, and it is not a note-zephyr bug.** Everything
+up to and including flashing works: the suite builds, the Notestation reserves,
+the image flashes over GDB and the board boots and enumerates. What fails is
+getting the console back afterwards.
+
+A reservation's `host_mcu_usb` symlink is present when the reservation is made,
+disappears when we flash, and never returns for the life of that reservation —
+even though the Swan re-enumerates within about 14 seconds. Waiting 240s does
+not help. Tracked as [blues/notestation#142][ns142].
+
+[ns142]: https://github.com/blues/notestation/issues/142
+
+The board is demonstrably fine. `scripts/hil/usb_probe.py` reads the peripheral
+registers over the reservation's `gdb_port` and, four minutes after flashing,
+reports:
+
+```
+pc            0x800bf74  <arch_cpu_idle+18>    running, idle loop
+OTG_DCFG      0x08200013  device address = 1   host completed SET_ADDRESS
+OTG_DCTL      0x00000000  SDIS clear           pull-up asserted
+OTG_DSTS      0x00428606  not suspended, full speed
+PWR_CR2       0x00000600  VDDUSB enabled
+```
+
+A host-assigned device address means the Pi enumerated the board, and the
+`DSTS` frame counter advances between runs, so the Pi is still sending it SOF
+packets while the tunnel reports the device gone.
+
+`note-c` does not hit this because its HIL console is `notecard_usb` — the
+Notecard's own USB, which reflashing the Swan leaves alone. note-zephyr is the
+first job here to need the MCU's own USB console across a flash, which is
+unavoidable when the device being flashed *is* the console.
+
+The durable fix is for the tunnel to re-attach when the device returns. If that
+does not land, the alternative is moving the console to RTT over SWD: the debug
+probe is a separate USB device that a target reflash never disturbs, so the
+whole failure class goes away. That needs `segger` adding to `west.yml`'s
+`name-allowlist`, which CI does not fetch today, plus a bridge so twister can
+read RTT.
+
+## Diagnosing the board itself
+
+Because the console is the USB device under test, a board that cannot bring up
+USB also cannot say why — `usb_dc_stm32` logs the failure to a console that
+does not exist. `scripts/hil/usb_probe.py` reaches around that, reading
+`PWR_CR2.USV`, the HSI48 state, `CLK48SEL`, `GCCFG.PWRDWN` and `DCTL.SDIS`
+directly over the `gdb_port` the reservation already exposes. It needs no
+firmware change, so it observes the real configuration, and it always resets
+the core back to running afterwards. The workflow runs it automatically when
+the smoke test fails.
+
 ## Recovering a halted board
 
-The Swan's USB console only exists while the core is running, so a board left
-halted by a debugger presents no USB device at all. The Notestation then drops
+A board left halted by a debugger presents no USB device at all, since the
+Swan's USB console only exists while the core is running. Note this is *not*
+the usual cause of a missing `host_mcu_usb` — see the known blocker above,
+where the core is running and enumerated and the symlink is still absent. Check
+with `usb_probe.py` before assuming a halt. The Notestation then drops
 the `host_mcu_usb` symlink, and `reserve_notestation` **fails for everyone** —
 it waits 30s for that symlink and gives up:
 
