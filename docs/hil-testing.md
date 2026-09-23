@@ -130,8 +130,12 @@ west twister -p swan_r5 -T tests \
 export NS_HOSTNAME=$(jq -r .hostname "$RESV_DIR/reservation.json")
 export CONSOLE_PORT="$RESV_DIR/host_mcu_usb"
 
+# -W must match the --build-only invocation above. Twister compares the
+# resulting Kconfig, and a mismatch in CONFIG_COMPILER_WARNINGS_AS_ERRORS makes
+# cmake reconfigure and rebuild -- which --test-only should never do, and which
+# eats the test's time budget before the board is ever flashed.
 west twister -p swan_r5 -T tests \
-  --fixture notecard_i2c --test-only --no-clean -O twister-out \
+  --fixture notecard_i2c --test-only --no-clean -W -O twister-out \
   --device-testing \
   --device-serial "$CONSOLE_PORT" \
   --device-serial-baud 115200 \

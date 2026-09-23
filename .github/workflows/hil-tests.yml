@@ -304,6 +304,7 @@ jobs:
             --test-only \
             --no-clean \
             -O twister-out \
+            -W \
             --device-testing \
             --device-serial "$CONSOLE_PORT" \
             --device-serial-baud 115200 \
