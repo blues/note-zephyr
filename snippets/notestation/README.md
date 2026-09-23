@@ -63,10 +63,19 @@ has is the USB device that just failed to come up, so the explanation is written
 to the thing that is broken. From CI it looks like a Notestation fault — the
 `host_mcu_usb` symlink never appears — rather than a firmware one.
 
-The legacy stack is marked `DEPRECATED` upstream, so builds print a Kconfig
-deprecation warning. That is expected and does not fail the build: twister's
-`--warnings-as-errors` sets `CONFIG_COMPILER_WARNINGS_AS_ERRORS`, which governs
-compiler warnings, not Kconfig ones. When `swan_r5` gains `usbd` in its
+The legacy stack is deprecated upstream in two separate ways, and only one of
+them is harmless. The Kconfig symbol `select DEPRECATED`, which just prints a
+warning during configuration. The stack's *C API* is also marked
+`__deprecated` — and `subsys/usb/device/usb_device.c` calls it, so Zephyr's own
+source trips `-Wdeprecated-declarations`. Twister builds with
+`CONFIG_COMPILER_WARNINGS_AS_ERRORS=y`, which makes that `-Werror` and fails
+the build outright. Hence `CONFIG_COMPILER_OPT="-Wno-error=deprecated-declarations"`
+in the conf: it demotes that single warning class, and because
+`CONFIG_COMPILER_OPT` is applied after `-Werror` in Zephyr's `CMakeLists.txt`,
+it wins. Disabling `-Werror` wholesale would work too, but would stop real
+warnings in our own test sources from failing the build.
+
+When `swan_r5` gains `usbd` in its
 `supported:` list, switch this file to `CONFIG_USB_DEVICE_STACK_NEXT` and drop
 this section — the devicetree overlay needs no change, because both stacks
 consume the same `zephyr,cdc-acm-uart` binding.
