@@ -201,16 +201,17 @@ jobs:
 
       # Exports NS_* environment variables and releases the reservation in a
       # post step, even if the job fails or is cancelled.
-      # Pinned to the branch of notestation-actions#2, which this job genuinely
-      # needs. v1.0.2 treats an absent interface symlink as a hard failure, and
-      # host_mcu_usb is absent exactly when the board is running firmware whose
-      # USB VID/PID matches no udev rule on the station -- which is the state a
-      # failed run leaves behind. Reserve then fails *before* the flash step
-      # that would put a correct image back on, so the only way out is a human
-      # with Tailnet access. Repin to a released tag once #2 lands, and before
-      # merging this PR.
+      # v1.0.2 treats an absent interface symlink as a hard failure. That is
+      # survivable now the snippet presents the USB VID/PID the station's udev
+      # rule matches, because a healthy board is always named and so always
+      # reserves. It is not survivable if a board is ever left running firmware
+      # the station cannot name: reserve then fails *before* the flash step
+      # that would put a correct image back on, and recovery needs a human with
+      # Tailnet access. notestation-actions#2 turns that into a warning; move
+      # to the tag carrying it once it lands. Deliberately a released tag and
+      # not that PR's branch, which could be force-pushed or deleted.
       - name: Reserve Notestation
-        uses: blues/notestation-actions/reserve_notestation@alex-dont-fail-on-absent-interfaces
+        uses: blues/notestation-actions/reserve_notestation@v1.0.2
         with:
           notestation: ${{ inputs.notestation }}
           tags: ${{ inputs.notestation == '' && (inputs.notestation_tags || 'mcu_swan mcu_debugger') || '' }}
