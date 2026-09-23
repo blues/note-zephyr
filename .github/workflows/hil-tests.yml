@@ -256,8 +256,14 @@ jobs:
         run: |
           # Same flash path twister uses, so a flashing problem shows up here
           # rather than being discovered again one stage later.
+          # --wait-timeout is deliberately long. The register probe below shows
+          # the Swan re-enumerating after a flash (DCTL.SDIS clear, DCFG device
+          # address assigned), yet the reservation's host_mcu_usb symlink does
+          # not come back within 60s. This distinguishes a tunnel that
+          # re-attaches slowly from one that never re-attaches at all.
           python note-zephyr/scripts/hil/notestation_flash.py \
-            --build-dir "$GITHUB_WORKSPACE/blinky-build"
+            --build-dir "$GITHUB_WORKSPACE/blinky-build" \
+            --wait-timeout 240
 
           python note-zephyr/scripts/hil/console_expect.py \
             --port "$CONSOLE_PORT" \
