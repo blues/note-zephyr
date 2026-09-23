@@ -243,12 +243,9 @@ the smoke test fails.
 ## Recovering a halted board
 
 A board left halted by a debugger presents no USB device at all, since the
-Swan's USB console only exists while the core is running. Note this is *not*
-the usual cause of a missing `host_mcu_usb` — see the known blocker above,
-where the core is running and enumerated and the symlink is still absent. Check
-with `usb_probe.py` before assuming a halt. The Notestation then drops
-the `host_mcu_usb` symlink, and `reserve_notestation` **fails for everyone** —
-it waits 30s for that symlink and gives up:
+Swan's USB console only exists while the core is running. The Notestation then
+drops the `host_mcu_usb` symlink, and `reserve_notestation` **fails for
+everyone** — it waits 30s for that symlink and gives up:
 
 ```
 Waiting for interface symlinks to appear...
@@ -257,6 +254,14 @@ Timed out after 30s waiting for: Host MCU USB symlink at .../host_mcu_usb
 
 That is a station-wide problem, not a note-zephyr one: any workflow reserving
 that Notestation hits it, including note-c's HIL job.
+
+A halt is not the only way to get there, and not the most likely one. Firmware
+whose USB VID/PID matches no udev rule on the station produces exactly the same
+symptom while the core runs perfectly — see [Why the console needs a specific
+USB VID/PID](#why-the-console-needs-a-specific-usb-vidpid). Run
+`scripts/hil/usb_probe.py` before assuming a halt: if it reports a
+host-assigned device address, the board is enumerated and naming is the
+problem.
 
 Because the action fails before exporting anything, **this workflow cannot
 recover the board itself**. Recovery needs someone on the Tailnet:
