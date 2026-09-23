@@ -32,7 +32,7 @@ transport and asserts on the response:
 
 | Case | What a failure means |
 |---|---|
-| `test_card_version` | The transport is broken. Read this one first — if it fails, the rest will too. |
+| `test_card_version` | The transport is broken. Read this one first — if it fails, the rest will too. Asserts only that `version` comes back non-empty; `api` is not a field every Notecard firmware returns. |
 | `test_consecutive_requests_are_stable` | Reads are being truncated or misaligned. Issues `card.version` three times and requires an identical answer; a bare "did it error" check would miss this. |
 | `test_hub_set` | A write-path regression. Every example issues `hub.set` at startup, so this breaks all of them. |
 | `test_note_add_queues_locally` | Nested request bodies are mishandled. Queues to `hil.qo` without syncing. |

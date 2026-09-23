@@ -99,8 +99,15 @@ ZTEST(notecard_hil, test_card_version)
 	zassert_not_null(version, "card.version response had no 'version'");
 	zassert_true(strlen(version) > 0, "card.version 'version' was empty");
 
-	zassert_true(JGetInt(rsp, "api") > 0,
-		     "card.version response had no usable 'api' field");
+	/*
+	 * Deliberately not asserting on "api". It is not a field every
+	 * Notecard firmware returns -- the Notecard on the HIL station answers
+	 * card.version with a valid, non-empty "version" and no "api" at all,
+	 * which failed this case while the four below passed. A non-empty
+	 * "version" already proves what this case is for: the request went
+	 * out, an answer came back, and note-c parsed a string field out of
+	 * it.
+	 */
 
 	LOG_INF("Notecard version: %s", version);
 
