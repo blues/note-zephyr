@@ -266,6 +266,18 @@ jobs:
             --wait-for-port 60 \
             --log "$GITHUB_WORKSPACE/blinky-console.log"
 
+      # When the console never appears, the board cannot say why: usb_dc_stm32
+      # reports the failure to a console that is itself the USB device that
+      # failed. Read the peripheral registers over SWD instead, which needs no
+      # firmware change and only the gdb_port the reservation already exposes.
+      # Leaves the core running, so it does not wedge the station.
+      - name: Diagnose USB on failure
+        if: failure()
+        run: |
+          python note-zephyr/scripts/hil/usb_probe.py \
+            --reservation-dir "$NS_RESERVATION_DIR" \
+            --elf "$GITHUB_WORKSPACE/blinky-build/zephyr/zephyr.elf"
+
       # Stage two: the ztest suite. --test-only reuses the images built before
       # the reservation, and --no-clean stops twister renaming that outdir.
       #
