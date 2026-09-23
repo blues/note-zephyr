@@ -63,17 +63,26 @@ has is the USB device that just failed to come up, so the explanation is written
 to the thing that is broken. From CI it looks like a Notestation fault — the
 `host_mcu_usb` symlink never appears — rather than a firmware one.
 
-The legacy stack is deprecated upstream in two separate ways, and only one of
-them is harmless. The Kconfig symbol `select DEPRECATED`, which just prints a
-warning during configuration. The stack's *C API* is also marked
-`__deprecated` — and `subsys/usb/device/usb_device.c` calls it, so Zephyr's own
-source trips `-Wdeprecated-declarations`. Twister builds with
-`CONFIG_COMPILER_WARNINGS_AS_ERRORS=y`, which makes that `-Werror` and fails
-the build outright. Hence `CONFIG_COMPILER_OPT="-Wno-error=deprecated-declarations"`
-in the conf: it demotes that single warning class, and because
-`CONFIG_COMPILER_OPT` is applied after `-Werror` in Zephyr's `CMakeLists.txt`,
-it wins. Disabling `-Werror` wholesale would work too, but would stop real
-warnings in our own test sources from failing the build.
+**Anything building this snippet must disable warnings-as-errors.** The legacy
+stack is deprecated upstream in three ways, and the last one is not
+suppressible:
+
+- The Kconfig symbol `select DEPRECATED`, which only prints a warning while
+  configuring. Harmless.
+- The stack's C API is marked `__deprecated`, so Zephyr's own
+  `subsys/usb/device/usb_device.c` trips `-Wdeprecated-declarations` against
+  itself. That one *is* demotable, with `-Wno-error=deprecated-declarations`.
+- Its macros are marked with Zephyr's `__DEPRECATED_MACRO`, which expands to a
+  bare `#pragma GCC warning`. GCC attaches **no `-W` category** to those
+  diagnostics — they print as `error: Macro is deprecated [-Werror]` with
+  nothing after the `-Werror` — so no `-Wno-error=` can target them.
+
+Under twister's default `-Werror` that last class fails the build outright, in
+Zephyr's sources rather than ours. So `.github/workflows/hil-tests.yml` passes
+`-W` to the twister build, and the local command in
+[`docs/hil-testing.md`](../../docs/hil-testing.md) does the same. The trade-off
+is real — warnings in our own test sources no longer fail that build — and it
+goes away when the Swan can use the new stack.
 
 When `swan_r5` gains `usbd` in its
 `supported:` list, switch this file to `CONFIG_USB_DEVICE_STACK_NEXT` and drop

@@ -121,8 +121,11 @@ RESV_DIR=$(ls -d ~/.notestation/pid-${RESV_PID}_* | head -1)
 
 # Build, then run against the hardware. Run these from the west topdir, not
 # from the note-zephyr directory, and adjust -T to match.
+# -W is required: the notestation snippet uses the legacy USB device stack,
+# whose deprecated macros cannot be demoted below -Werror. See
+# snippets/notestation/README.md.
 west twister -p swan_r5 -T tests \
-  --fixture notecard_i2c --build-only -O twister-out
+  --fixture notecard_i2c --build-only -W -O twister-out
 
 export NS_HOSTNAME=$(jq -r .hostname "$RESV_DIR/reservation.json")
 export CONSOLE_PORT="$RESV_DIR/host_mcu_usb"

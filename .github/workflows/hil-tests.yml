@@ -133,12 +133,20 @@ jobs:
       # west resolves the workspace from the working directory anyway.
       - name: Build HIL test suite
         run: |
+          # -W (--disable-warnings-as-errors) is required, not cosmetic. The
+          # notestation snippet builds the console on the legacy USB device
+          # stack -- the only one swan_r5 supports -- and Zephyr marks that
+          # stack's macros with __DEPRECATED_MACRO, a bare `#pragma GCC
+          # warning`. GCC gives those diagnostics no -W category, so they
+          # cannot be demoted individually; under twister's default -Werror
+          # Zephyr's own subsys/usb/device sources fail to compile.
           west twister \
             -p swan_r5 \
             -T note-zephyr/tests \
             --fixture notecard_i2c \
             --build-only \
             --clobber-output \
+            -W \
             -O twister-out \
             --inline-logs
 
