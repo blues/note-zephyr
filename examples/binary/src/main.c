@@ -26,9 +26,6 @@ int main(void)
 {
     LOG_INF("Initializing binary send/receive example...");
 
-    // Initialize note-c hooks
-    NoteSetUserAgent((char *)"note-zephyr");
-
     // Configure the Notecard
     J *req = NoteNewRequest("hub.set");
     if (req) {
