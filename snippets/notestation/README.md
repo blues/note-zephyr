@@ -32,6 +32,16 @@ The snippet is provided by this module via `snippet_root` in
 `zephyr/module.yml`, so it is available to any application in a west workspace
 that includes note-zephyr — no path arguments needed.
 
+## The USB VID/PID is load-bearing
+
+A Notestation names its serial devices with a udev rule matching on USB
+VID/PID, and its server opens the resulting `/dev/<hostname>_mcu_usb` by name.
+Zephyr's default `2fe3:0100` matches no rule, so the node is never created --
+the board enumerates fine and is simply never named, and the reservation's
+`host_mcu_usb` symlink never appears. `30a4:0002` is the Swan's `mcu_usb`
+VID/PID per the notestation repo's `ADMIN.md`. See
+[`docs/hil-testing.md`](../../docs/hil-testing.md).
+
 ## Why the console interface matters beyond output
 
 A Notestation tunnel publishes its symlink only while the attached device is

@@ -183,47 +183,41 @@ application rather than a test binary and so has no twister harness. It exits
 non-zero on a timeout and fails fast if a `<err>` line or a Zephyr fatal shows
 up before the expected string.
 
-## Known blocker: the console tunnel does not survive a flash
+## Why the console needs a specific USB VID/PID
 
-**The smoke test currently fails, and it is not a note-zephyr bug.** Everything
-up to and including flashing works: the suite builds, the Notestation reserves,
-the image flashes over GDB and the board boots and enumerates. What fails is
-getting the console back afterwards.
-
-A reservation's `host_mcu_usb` symlink is present when the reservation is made,
-disappears when we flash, and never returns for the life of that reservation —
-even though the Swan re-enumerates within about 14 seconds. Waiting 240s does
-not help. Tracked as [blues/notestation#142][ns142].
-
-[ns142]: https://github.com/blues/notestation/issues/142
-
-The board is demonstrably fine. `scripts/hil/usb_probe.py` reads the peripheral
-registers over the reservation's `gdb_port` and, four minutes after flashing,
-reports:
+A Notestation names its serial devices with a udev rule that matches on USB
+**VID/PID**, and the server then opens the resulting node by name:
 
 ```
-pc            0x800bf74  <arch_cpu_idle+18>    running, idle loop
-OTG_DCFG      0x08200013  device address = 1   host completed SET_ADDRESS
-OTG_DCTL      0x00000000  SDIS clear           pull-up asserted
-OTG_DSTS      0x00428606  not suspended, full speed
-PWR_CR2       0x00000600  VDDUSB enabled
+SUBSYSTEM=="tty", ATTRS{idVendor}=="30a4", ATTRS{idProduct}=="0002", \
+  MODE="0666", SYMLINK+="<hostname>_mcu_usb"
 ```
 
-A host-assigned device address means the Pi enumerated the board, and the
-`DSTS` frame counter advances between runs, so the Pi is still sending it SOF
-packets while the tunnel reports the device gone.
+The [notestation repo's `ADMIN.md`][admin] maps `mcu_usb` on a Swan to
+`0483:5740` (ST's Virtual COM Port, what the STM32duino firmware `note-c` uses
+presents) and `30a4:0002` (Blues' own). Zephyr defaults to `2fe3:0100`, which
+matches neither.
 
-`note-c` does not hit this because its HIL console is `notecard_usb` — the
-Notecard's own USB, which reflashing the Swan leaves alone. note-zephyr is the
-first job here to need the MCU's own USB console across a flash, which is
-unavoidable when the device being flashed *is* the console.
+[admin]: https://github.com/blues/notestation/blob/main/notestation/ADMIN.md
 
-The durable fix is for the tunnel to re-attach when the device returns. If that
-does not land, the alternative is moving the console to RTT over SWD: the debug
-probe is a separate USB device that a target reflash never disturbs, so the
-whole failure class goes away. That needs `segger` adding to `west.yml`'s
-`name-allowlist`, which CI does not fetch today, plus a bridge so twister can
-read RTT.
+The failure this produces is badly disguised. The board enumerates perfectly --
+the host assigns it a device address and keeps sending it SOF packets -- it is
+simply never *named*. `/dev/<hostname>_mcu_usb` is never created, the server's
+`os.OpenFile` fails with `ENOENT` on every reconnect, the client never receives
+its `deviceReadyByte`, and the reservation's `host_mcu_usb` symlink never comes
+back. From CI it looks exactly like a Notestation fault, and a fresh
+reservation *does* have the symlink -- because until we flash, the board is
+still running whatever firmware was on it before, whose VID/PID does match.
+
+So the [`notestation`](../snippets/notestation) snippet sets:
+
+```
+CONFIG_USB_DEVICE_VID=0x30A4
+CONFIG_USB_DEVICE_PID=0x0002
+```
+
+If a station is provisioned for a different MCU, check that map before assuming
+these values are right.
 
 ## Diagnosing the board itself
 
