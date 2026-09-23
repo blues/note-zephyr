@@ -101,7 +101,18 @@ consume the same `zephyr,cdc-acm-uart` binding.
 
 ## Boot delay
 
-`CONFIG_BOOT_DELAY=3000` is deliberate. The USB console vanishes while the board
-is flashed and returns only after re-enumeration, so a host reading it can
+`CONFIG_BOOT_DELAY=10000` is deliberate. The USB console vanishes while the
+board is flashed and returns only after re-enumeration, so a host reading it can
 otherwise miss the beginning of the output — including a ztest banner, which
 leaves twister waiting for something already gone.
+
+The delay is counted from reset, so it has to outlast re-enumeration *plus* the
+reader reopening the port. Re-enumeration on `barcelona-notestation-1` was
+measured at 1.0s on one run and 4.5s on the next; at 3000ms the slower run lost
+the race and the smoke test then sat in silence until its timeout, because
+blinky prints nothing after `Entering main loop`. 10s is margin over the worst
+observed rather than a tuned value.
+
+Zephyr has no DTR-gated console option that would make this exact — only
+`CONFIG_SHELL_BACKEND_SERIAL_CHECK_DTR`, which gates the shell backend, not the
+console.
