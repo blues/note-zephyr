@@ -284,17 +284,43 @@ on `monitor reset run` inside the GDB session — what state the core is left in
 when GDB disconnects depends on the OpenOCD target's gdb-detach event handling,
 and leaving it halted is what causes the above.
 
-## Enabling the PR trigger
+## When it runs
 
-The workflow has no `pull_request` trigger yet. Adding one is a two-line change
-to `.github/workflows/hil-tests.yml`, but do it only after a dispatch run is
-green, and note what it commits to:
+| Trigger | Covers |
+|---|---|
+| `pull_request` against `main` | Every PR, except forks and Dependabot (see below) |
+| `workflow_dispatch` | Manual runs, and re-testing a wedged station |
+| nightly `schedule` (09:00 UTC) | `main`, after note-c's HIL job so the two do not fight over hardware |
 
-- Every PR takes exclusive hold of a Notestation. The `concurrency` group means
-  a new push cancels its own in-flight run, but separate PRs still queue.
-- Fork PRs cannot see the secrets. The job's `if:` already skips them rather
-  than failing, so this is handled — but it does mean HIL results are absent on
-  fork contributions.
+Running on every PR is affordable here: the repo averages under two PRs a
+month, and a run holds the Notestation for roughly five minutes. The
+`concurrency` group cancels a PR's own in-flight run when it is pushed to, so
+only distinct PRs ever queue.
+
+### Dependabot
+
+Dependabot PRs are skipped, and this is a stopgap rather than a decision.
+GitHub runs them against a **separate Dependabot secret store**, which is empty
+for this repo — so `TAILSCALE_OAUTH_*` would be blank and the job would fail on
+credentials rather than on anything real. A job that is red for a bogus reason
+gets ignored, which is worse than no job.
+
+That is unfortunate, because Dependabot PRs here are `note-c` bumps, and a
+`note-c` bump is the single most likely thing to break the Notecard transport.
+They account for most of this repo's PRs.
+
+To fix it properly, copy `TAILSCALE_OAUTH_CLIENT_ID`,
+`TAILSCALE_OAUTH_CLIENT_SECRET`, `BLUES_NOTE_ZEPHYR_AUTOMATION_APP_ID` and
+`BLUES_NOTE_ZEPHYR_AUTOMATION_PRIVATE_KEY` into **Settings → Secrets and
+variables → Dependabot**, then drop the `github.actor != 'dependabot[bot]'`
+clause from the job's `if:`. Until then the nightly run catches a bad bump
+within a day of it merging.
+
+### Forks
+
+Fork PRs cannot see the secrets either. The job's `if:` skips them rather than
+failing, so HIL results are simply absent on fork contributions; a maintainer
+can run `workflow_dispatch` against the branch if a fork PR needs the coverage.
 
 ## Credentials
 

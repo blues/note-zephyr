@@ -5,11 +5,12 @@ name: HIL Tests
 # with a real Swan and Notecard attached, reachable over the Blues Tailnet --
 # flash it, and assert on what the board says over its console.
 #
-# Deliberately not wired to `pull_request` yet: the job needs Tailscale and
-# Notestation secrets plus exclusive access to physical hardware, none of which
-# can be validated from a branch. Turn the PR trigger on once a dispatch run is
-# green. See docs/hil-testing.md.
+# Runs on every PR. The repo averages under two PRs a month and a run holds the
+# hardware for about five minutes, so contention with note-c's HIL job on the
+# same station is not a real concern. See docs/hil-testing.md.
 on:
+  pull_request:
+    branches: [main]
   workflow_dispatch:
     inputs:
       notestation_tags:
@@ -62,10 +63,17 @@ env:
 
 jobs:
   hil:
-    # Fork PRs cannot see the Tailscale or Notestation secrets, so skip rather
-    # than fail once the pull_request trigger is enabled.
+    # Skip, rather than fail, anything that structurally cannot see the
+    # secrets. Fork PRs do not get them. Neither do Dependabot PRs: GitHub
+    # gives those a separate Dependabot secret store, which is empty for this
+    # repo, so TAILSCALE_OAUTH_* would be blank and the job would go red for a
+    # credentials reason on every note-c bump. Those bumps are the changes most
+    # worth testing here, so this skip is a stopgap -- copy the four secrets
+    # into Settings > Secrets > Dependabot and delete the actor check. Until
+    # then the nightly schedule catches a bad bump within a day of merge.
     if: >-
       github.event.repository.fork != true &&
+      github.actor != 'dependabot[bot]' &&
       (github.event_name != 'pull_request' ||
        github.event.pull_request.head.repo.full_name == github.repository)
     runs-on: ubuntu-latest
