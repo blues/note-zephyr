@@ -5,11 +5,14 @@ name: HIL Tests
 # with a real Swan and Notecard attached, reachable over the Blues Tailnet --
 # flash it, and assert on what the board says over its console.
 #
-# Runs on every PR. The repo averages under two PRs a month and a run holds the
+# Runs whenever the code changes -- every PR and every push to main -- rather
+# than on a timer. The repo averages under two PRs a month and a run holds the
 # hardware for about five minutes, so contention with note-c's HIL job on the
 # same station is not a real concern. See docs/hil-testing.md.
 on:
   pull_request:
+    branches: [main]
+  push:
     branches: [main]
   workflow_dispatch:
     inputs:
@@ -42,9 +45,6 @@ on:
         description: 'Zephyr revision to build against.'
         type: string
         default: v4.4.0
-  schedule:
-    # Nightly, after the note-c HIL job so the two do not fight over hardware.
-    - cron: '0 9 * * *'
 
 permissions:
   checks: write
@@ -70,7 +70,7 @@ jobs:
     # credentials reason on every note-c bump. Those bumps are the changes most
     # worth testing here, so this skip is a stopgap -- copy the four secrets
     # into Settings > Secrets > Dependabot and delete the actor check. Until
-    # then the nightly schedule catches a bad bump within a day of merge.
+    # then the push-to-main run catches a bad bump when it merges.
     if: >-
       github.event.repository.fork != true &&
       github.actor != 'dependabot[bot]' &&
