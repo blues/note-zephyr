@@ -5,3 +5,14 @@ updates:
     schedule:
       interval: "daily"
     directory: "."
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    groups:
+      actions-minor-patch:
+        update-types:
+          - "minor"
+          - "patch"

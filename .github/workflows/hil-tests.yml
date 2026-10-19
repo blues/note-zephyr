@@ -5,11 +5,14 @@ name: HIL Tests
 # with a real Swan and Notecard attached, reachable over the Blues Tailnet --
 # flash it, and assert on what the board says over its console.
 #
-# Runs on every PR. The repo averages under two PRs a month and a run holds the
+# Runs whenever the code changes -- every PR and every push to main -- rather
+# than on a timer. The repo averages under two PRs a month and a run holds the
 # hardware for about five minutes, so contention with note-c's HIL job on the
 # same station is not a real concern. See docs/hil-testing.md.
 on:
   pull_request:
+    branches: [main]
+  push:
     branches: [main]
   workflow_dispatch:
     inputs:
@@ -42,9 +45,6 @@ on:
         description: 'Zephyr revision to build against.'
         type: string
         default: v4.4.0
-  schedule:
-    # Nightly, after the note-c HIL job so the two do not fight over hardware.
-    - cron: '0 9 * * *'
 
 permissions:
   checks: write
@@ -70,7 +70,7 @@ jobs:
     # credentials reason on every note-c bump. Those bumps are the changes most
     # worth testing here, so this skip is a stopgap -- copy the four secrets
     # into Settings > Secrets > Dependabot and delete the actor check. Until
-    # then the nightly schedule catches a bad bump within a day of merge.
+    # then the push-to-main run catches a bad bump when it merges.
     if: >-
       github.event.repository.fork != true &&
       github.actor != 'dependabot[bot]' &&
@@ -85,7 +85,7 @@ jobs:
         shell: bash
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           path: note-zephyr
           fetch-depth: 1
@@ -97,7 +97,7 @@ jobs:
           cat note-zephyr/west.yml
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: '3.12'
 
@@ -316,7 +316,7 @@ jobs:
             --inline-logs
 
       - name: Publish test report
-        uses: mikepenz/action-junit-report@v3
+        uses: mikepenz/action-junit-report@v6
         if: success() || failure()
         with:
           report_paths: twister-out/twister.xml
@@ -324,7 +324,7 @@ jobs:
           require_tests: true
 
       - name: Upload logs
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: hil-logs

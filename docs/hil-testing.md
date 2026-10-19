@@ -40,9 +40,8 @@ transport and asserts on the response:
 
 ## Running it
 
-The workflow is `workflow_dispatch` and nightly `schedule` only — see
-[Enabling the PR trigger](#enabling-the-pr-trigger). To run it by hand, use the
-Actions tab or:
+The workflow runs on PRs and pushes to `main` — see
+[When it runs](#when-it-runs). To run it by hand, use the Actions tab or:
 
 ```bash
 gh workflow run hil-tests.yml --repo blues/note-zephyr
@@ -290,7 +289,7 @@ and leaving it halted is what causes the above.
 |---|---|
 | `pull_request` against `main` | Every PR, except forks and Dependabot (see below) |
 | `workflow_dispatch` | Manual runs, and re-testing a wedged station |
-| nightly `schedule` (09:00 UTC) | `main`, after note-c's HIL job so the two do not fight over hardware |
+| `push` to `main` | Every merge, including Dependabot bumps the PR trigger skips |
 
 Running on every PR is affordable here: the repo averages under two PRs a
 month, and a run holds the Notestation for roughly five minutes. The
@@ -313,8 +312,8 @@ To fix it properly, copy `TAILSCALE_OAUTH_CLIENT_ID`,
 `TAILSCALE_OAUTH_CLIENT_SECRET`, `BLUES_NOTE_ZEPHYR_AUTOMATION_APP_ID` and
 `BLUES_NOTE_ZEPHYR_AUTOMATION_PRIVATE_KEY` into **Settings → Secrets and
 variables → Dependabot**, then drop the `github.actor != 'dependabot[bot]'`
-clause from the job's `if:`. Until then the nightly run catches a bad bump
-within a day of it merging.
+clause from the job's `if:`. Until then the push-to-main run catches a bad
+bump when it merges.
 
 ### Forks
 
