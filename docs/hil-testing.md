@@ -12,7 +12,7 @@ workstation over the Blues Tailnet.
 
 ## What runs
 
-Two stages, in order, because they fail differently:
+Three stages, in order, because they fail differently:
 
 1. **blinky smoke test.** Flashes `examples/blinky` with the I2C overlay and
    waits for `Entering main loop...` on the console. blinky only reaches that
@@ -21,6 +21,14 @@ Two stages, in order, because they fail differently:
    When this fails, the problem is the plumbing, not the tests.
 2. **`tests/notecard` ztest suite.** The actual assertions, run under
    [twister][twister] in `--device-testing` mode.
+3. **outboard-dfu smoke test.** Flashes `examples/outboard-dfu` the same way
+   as blinky and waits for `Entering main loop...`, which it only logs after
+   `card.dfu`, `card.aux` and `dfu.status` have all succeeded. This proves the
+   example enables Outboard DFU on a real Notecard; it does not perform an
+   update, which would need Notehub connectivity. `card.dfu` is persistent
+   Notecard configuration and the station is shared, so a final step always
+   turns it back off over the Notecard's own USB port
+   (`scripts/hil/notecard_request.py`), even if the stage failed partway.
 
 [twister]: https://docs.zephyrproject.org/latest/develop/test/twister.html
 

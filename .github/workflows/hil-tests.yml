@@ -163,6 +163,19 @@ jobs:
             -DDTC_OVERLAY_FILE=../overlays/i2c.overlay \
             -DEXTRA_CONF_FILE="$GITHUB_WORKSPACE/note-zephyr/scripts/hil/smoke.conf"
 
+      # Same recipe as blinky: the notestation snippet for a reachable console,
+      # and smoke.conf for a well-formed ProductUID so the startup hub.set does
+      # not fail before the example reaches its Outboard DFU requests.
+      - name: Build outboard-dfu smoke-test image
+        working-directory: note-zephyr/examples/outboard-dfu
+        run: |
+          west build -p -b swan_r5 . \
+            -d "$GITHUB_WORKSPACE/outboard-dfu-build" \
+            -S notestation \
+            -- \
+            -DDTC_OVERLAY_FILE=../overlays/i2c.overlay \
+            -DEXTRA_CONF_FILE="$GITHUB_WORKSPACE/note-zephyr/scripts/hil/smoke.conf"
+
       # TAILSCALE_OAUTH_* are org-level secrets, so nothing has to be copied
       # into this repo. Note these are *not* note-c's TS_OAUTH_* names -- those
       # are repo-local to note-c. Version pinned to match blues/hub rather than
@@ -315,6 +328,45 @@ jobs:
             --flash-command "$GITHUB_WORKSPACE/note-zephyr/scripts/hil/notestation_flash.py" \
             --inline-logs
 
+      # Stage three: outboard-dfu. It only logs "Entering main loop" after
+      # card.dfu, card.aux and dfu.status have all succeeded, and logs <err>
+      # if any of them fails, so this proves the example enables Outboard DFU
+      # on a real Notecard. It does not perform an update -- that needs Notehub
+      # connectivity, which this workflow deliberately avoids.
+      # Runs last so it cannot disturb the stages above.
+      - name: Smoke test outboard-dfu on hardware
+        run: |
+          python note-zephyr/scripts/hil/notestation_flash.py \
+            --build-dir "$GITHUB_WORKSPACE/outboard-dfu-build" \
+            --wait-timeout 60
+
+          python note-zephyr/scripts/hil/console_expect.py \
+            --port "$CONSOLE_PORT" \
+            --expect "Entering main loop" \
+            --timeout 90 \
+            --wait-for-port 60 \
+            --log "$GITHUB_WORKSPACE/outboard-dfu-console.log"
+
+      # The Notestation is shared with other repos' HIL jobs, and card.dfu is
+      # persistent Notecard configuration: left on, the next job's Notecard
+      # would drive the Swan's BOOT0 and reset lines. Turn it off over the
+      # Notecard's own port, whatever the host is running. outboard-dfu also
+      # sets card.aux off and hub.set continuous, but those are the Notecard
+      # default and what blinky already sets, so nothing new to undo there.
+      # Runs whenever there is a reservation, because a failure midway through
+      # the stage above can still have left Outboard DFU enabled.
+      - name: Restore Notecard Outboard DFU configuration
+        if: always() && env.NS_RESERVATION_DIR != ''
+        run: |
+          if [ -z "$NS_NOTECARD_USB" ]; then
+            echo "::error::NS_NOTECARD_USB is empty on ${NS_HOSTNAME}; cannot" \
+                 "turn Outboard DFU back off. Send {\"req\":\"card.dfu\",\"name\":\"-\",\"off\":true} by hand."
+            exit 1
+          fi
+          python note-zephyr/scripts/hil/notecard_request.py \
+            --port "$NS_NOTECARD_USB" \
+            --request '{"req":"card.dfu","name":"-","off":true}'
+
       - name: Publish test report
         uses: mikepenz/action-junit-report@v6
         if: success() || failure()
@@ -330,6 +382,7 @@ jobs:
           name: hil-logs
           path: |
             blinky-console.log
+            outboard-dfu-console.log
             twister-out/twister.xml
             twister-out/twister.json
             twister-out/twister.log
