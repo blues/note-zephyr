@@ -57,7 +57,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  NOTESTATION_CLIENT_VERSION: notestation-v3.6.0
+  NOTESTATION_CLIENT_VERSION: notestation-v3.9.1
   ZEPHYR_VERSION: ${{ inputs.zephyr_version || 'v4.4.0' }}
   CONSOLE_ENV: ${{ inputs.console_env || 'NS_HOST_MCU_USB' }}
 
@@ -189,13 +189,13 @@ jobs:
           repositories: notestation
 
       - name: Install notestation-client
-        uses: blues/notestation-actions/install_notestation_client@v1.0.2
+        uses: blues/notestation-actions/install_notestation_client@v1.0.3
         with:
           version: ${{ env.NOTESTATION_CLIENT_VERSION }}
           token: ${{ steps.app-token.outputs.token }}
 
       # Which stations carry which hardware is not recorded in any repo, and
-      # tag-based reservation picks the first match -- which is no help when
+      # tag-based reservation picks the first free match -- which is no help when
       # that match is a station whose host MCU is currently presenting no USB
       # device. Log the inventory so a specific host can be chosen.
       - name: List Notestations
@@ -204,7 +204,7 @@ jobs:
 
       # Exports NS_* environment variables and releases the reservation in a
       # post step, even if the job fails or is cancelled.
-      # v1.0.2 treats an absent interface symlink as a hard failure. That is
+      # v1.0.3 treats an absent interface symlink as a hard failure. That is
       # survivable now the snippet presents the USB VID/PID the station's udev
       # rule matches, because a healthy board is always named and so always
       # reserves. It is not survivable if a board is ever left running firmware
@@ -214,7 +214,7 @@ jobs:
       # to the tag carrying it once it lands. Deliberately a released tag and
       # not that PR's branch, which could be force-pushed or deleted.
       - name: Reserve Notestation
-        uses: blues/notestation-actions/reserve_notestation@v1.0.2
+        uses: blues/notestation-actions/reserve_notestation@v1.0.3
         with:
           notestation: ${{ inputs.notestation }}
           tags: ${{ inputs.notestation == '' && (inputs.notestation_tags || 'mcu_swan mcu_debugger') || '' }}
