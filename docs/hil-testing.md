@@ -110,13 +110,13 @@ becomes unnecessary.
 
 ## Running the suite locally
 
-You need Tailnet access and `notestation-client` on `PATH`.
+You need Tailnet access and `notestation-client` v3.9.0 or later on `PATH`.
 
 ```bash
-# Reserve, and keep it held in the background.
-notestation-client reserve --tags mcu_swan,mcu_debugger &
-RESV_PID=$!
-RESV_DIR=$(ls -d ~/.notestation/pid-${RESV_PID}_* | head -1)
+# Reserve. --detach returns at the grant, and a background process holds the
+# reservation until the release.
+RESV_DIR=$(notestation-client reserve --tags mcu_swan,mcu_debugger --detach --json \
+  | jq -r .reservation_dir)
 
 # Build, then run against the hardware. Run these from the west topdir, not
 # from the note-zephyr directory, and adjust -T to match.
@@ -141,7 +141,7 @@ west twister -p swan_r5 -T tests \
   --flash-before \
   --flash-command "$PWD/scripts/hil/notestation_flash.py"
 
-kill $RESV_PID
+notestation-client release --notestation "$NS_HOSTNAME"
 ```
 
 Note the `--fixture notecard_i2c`: without it twister builds the suite but
@@ -266,12 +266,11 @@ Because the action fails before exporting anything, **this workflow cannot
 recover the board itself**. Recovery needs someone on the Tailnet:
 
 ```bash
-# The raw client does not wait for interface symlinks, so it still reserves.
-notestation-client reserve --notestation barcelona-notestation-1 &
-RESV_PID=$!
-sleep 5
+# Needs notestation-client v3.9.0 or later. --detach returns at the grant: the
+# client waits at most 10 s for a missing port such as host_mcu_usb.
+notestation-client reserve --notestation barcelona-notestation-1 --detach
 notestation-client reset --host-mcu --notestation barcelona-notestation-1
-kill $RESV_PID
+notestation-client release --notestation barcelona-notestation-1
 ```
 
 `scripts/hil/notestation_flash.py --reset-only` does the same thing over
