@@ -1,0 +1,33 @@
+{
+  "$schema": "https://context7.com/schema/context7.json",
+  "url": "https://context7.com/blues/note-zephyr",
+  "public_key": "pk_nVFOrz6sC1j4Aqx8A32xw",
+  "projectTitle": "note-zephyr: Zephyr module for Blues Notecard",
+  "description": "Zephyr RTOS west module for using a Blues Notecard over I2C or UART. It wraps the note-c library with Zephyr transports selected by devicetree and registers heap, timing, mutex, and logging hooks at boot, so applications call the note-c API directly. Configured with Kconfig (CONFIG_BLUES_NOTECARD). Includes blinky, message queue, binary transfer, and shell examples.",
+  "excludeFolders": [
+    "note-c",
+    "tests",
+    "snippets",
+    "scripts",
+    ".github",
+    ".devcontainer"
+  ],
+  "excludeFiles": [
+    "hil-testing.md",
+    "CMakeLists.txt"
+  ],
+  "includeExtensions": [
+    ".overlay",
+    ".conf"
+  ],
+  "rules": [
+    "Add note-zephyr to your west.yml manifest with `submodules: true`; the module needs its note-c submodule.",
+    "Enable the module in prj.conf with CONFIG_NEWLIB_LIBC=y and CONFIG_BLUES_NOTECARD=y. note-c allocates from its own heap, sized by CONFIG_BLUES_NOTECARD_HOOKS_HEAP_SIZE (default 16384 bytes).",
+    "Select I2C or UART in devicetree, not code: add a node with compatible = \"blues,notecard\" under an I2C bus (reg = <0x17>) or a UART, as in examples/overlays/i2c.overlay and uart.overlay.",
+    "The module registers note-c's memory, timing, mutex, logging and transport hooks at boot; don't call NoteSetFn(), NoteSetFnI2C() or NoteSetFnSerial(). Include <note.h> and call NoteNewRequest() and NoteRequest().",
+    "Set the ProductUID with CONFIG_BLUES_NOTEHUB_PRODUCT_UID in prj.conf and pass it as the \"product\" argument of hub.set.",
+    "NoteRequest() and NoteRequestResponse() free the request; check each response with NoteResponseError() and free it with NoteDeleteResponse().",
+    "Copy Notecard request and argument names exactly from the Notecard API reference; do not invent requests, arguments, or response fields.",
+    "When the Blues Expert MCP server is connected, check generated Notecard JSON requests with its api_validate tool before using them."
+  ]
+}
