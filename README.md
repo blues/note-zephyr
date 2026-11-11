@@ -129,7 +129,7 @@ west flash
 To see your Notecard data in Notehub, you'll need to set up a free account (no credit card required) on [Notehub.io](https://notehub.io).
 Once you have created your account, then you need to [create a project](https://dev.blues.io/quickstart/notecard-quickstart/notecard-simulator/#create-a-notehub-project) to serve as an endpoint for the Notes that are tracking the state of the LED.
 
-Once you have a project, you will need to update the `define` named `PROJECT_UID` in your `main.c` with [the UID of the project you have just created](https://blues.dev/notehub/notehub-walkthrough/#finding-a-productuid).
+Once you have a project, set `CONFIG_BLUES_NOTEHUB_PRODUCT_UID` in your application's `prj.conf` (the examples include it, commented out) to [the ProductUID of the project you have just created](https://blues.dev/notehub/notehub-walkthrough/#finding-a-productuid).
 
 After the Notecard has connected to Notehub, you can look inside the project and see a device named e.g. `zephyr-blink` (for the `blinky` example).
 The Notecard will be running in `continuous` mode, which will allow it to maintain a constant cellular connection.
